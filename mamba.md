@@ -41,7 +41,7 @@
     - [Convolution ⇒ LSSL](#convolution--lssl)
   - [表現力](#表現力)
   - [学習](#学習)
-- [S4](#s4)
+- [S4 (Structured State Space Sequence model)](#s4-structured-state-space-sequence-model)
   - [対角化のモチベーション](#対角化のモチベーション)
   - [Normal Plus Low-Rank (NPLR)とDiagonal Plus Low-Rank (DPLR)](#normal-plus-low-rank-nplrとdiagonal-plus-low-rank-dplr)
   - [計算アルゴリズム](#計算アルゴリズム)
@@ -54,6 +54,15 @@
     - [画像・テキスト](#画像テキスト)
     - [S4D](#s4d)
   - [考察](#考察)
+- [H3 (Hungry Hungry HiPPOs)](#h3-hungry-hungry-hippos)
+  - [S4の弱点](#s4の弱点)
+  - [Attention-Likeな構造](#attention-likeな構造)
+    - [Shift SSM](#shift-ssm)
+    - [$\\text{SSM}\_\\text{shift}(K)\\odot V$](#textssm_textshiftkodot-v)
+    - [Diag SSM](#diag-ssm)
+    - [$Q \\odot \\text{SSM}\_\\text{diag}(\\cdot)$](#q-odot-textssm_textdiagcdot)
+  - [アルゴリズム](#アルゴリズム)
+  - [実験結果](#実験結果-1)
 - [Mamba vs Transformer](#mamba-vs-transformer)
 
 </details>
@@ -75,16 +84,16 @@ Mambaは理論にガチガチに固められた手法です．
 ここでは以下の流れに沿って解説します．
 
 
-1. LMU (Legendre Memory Unit)　　*NeurIPS 2019
-2. HiPPO (Higher-order polynomial projection operations)　　*NeurIPS 2020
-3. LSSL (Linear State Space Layer)　　*NeurIPS 2021
-4. S4 (Structured State Space Sequence model)　　*ICLR 2022
-5. Mamba
+1. LMU (Legendre Memory Unit)  *NeurIPS 2019
+2. HiPPO (Higher-order polynomial projection operations)  *NeurIPS 2020
+3. LSSL (Linear State Space Layer)  *NeurIPS 2021
+4. S4 (Structured State Space Sequence model)  *ICLR 2022
+5. H3 (Hungry Hungry HiPPOs)  *ICLR 2023
+6. Mamba
+7. Mamba 2
 
 
-錚々たる顔ぶれです．
-怖いです．  
-ちなみに，LMUを除く全ての論文の第一著者が同じ人です．（すごい）
+錚々たる顔ぶれですが頑張りましょう．
 
 
 # 2. 事前知識
@@ -1289,7 +1298,7 @@ HiPPOの部分でも触れましたが，LSSLの行列の設定によっては�
 しかし残念なことに，LSSLにおける工夫は綺麗ではないらしく，計算は非常に不安定だといいます．
 これを解決したのが次に紹介するS4になります．
 
-# S4
+# S4 (Structured State Space Sequence model)
 前述したとおり，S4はLSSLにおける2つの課題を華麗に解決した手法です．
 LSSLでは，HiPPOの一般的なクラスを求めることでHiPPO行列の学習を行っていましたが，S4ではこれを諦め，最低限HiPPO-LagT・HiPPO-LegT・HiPPO-LegSが含まれるクラスを求めることにします．
 そして，そうして求めたクラスでは，畳み込みカーネルを高速に計算することができます．
@@ -1732,7 +1741,7 @@ $$
 
 ---
 
-$\mathcal{K}_L$ を直接計算する代わりに次のような生成関数を考えます．
+$\mathcal{K}_L$ を直接計算する代わりに次のような生成関数（母関数）を考えます．
 $$
 \hat{K}(z; \bar{A}, \bar{B}, C) \in \mathbb{C} := \sum_{k=0}^{\infty} C^* \bar{A}^k \bar{B} z^k = C^* (I - \bar{A}z)^{-1} \bar{B}
 $$
@@ -1987,6 +1996,153 @@ https://ai-scholar.tech/articles/time-series/FiLM
 しかしこの手法もまた，別の論文で出てきたところを見たことがありません...
 
 誰か検証して...
+
+# H3 (Hungry Hungry HiPPOs)
+## S4の弱点
+さて，S4というとても素晴らしい手法が提案されたわけですが，そんなS4にも弱点があります．
+まずは，H3の位置づけについてまとめられた以下の図を見てください．
+
+<section style="text-align: center;">
+
+![](images/h3/about.png)
+
+</section>
+
+S4の右下部分にTransformerモデルとの比較が簡単に載っています．
+この記述から，S4はTransformerに比べて計算時間と自然言語処理分野が劣っていることが分かります．
+なんで計算時間が劣っているんだ？と思うかもしれませんが，実はGPUがTransformerと相性が良すぎて，理論上の計算速度とは違う結果になってしまっているのです．
+この問題について，H3やmambaではハードウェアを意識したアルゴリズムを考えることで対処していますので，いったん置いておきましょう．
+
+問題は自然言語処理の分野です．
+H3ではこの問題について，2つの簡単なタスクを解かせることで，S4に足りない要素を指摘しています．
+2つの簡単なタスクとは次の通りです．
+
+<section style="text-align: center;">
+
+![](images/h3/nlptask.png)
+
+</section>
+
+- Induction Head
+
+  特殊なトークン $"\vdash"$ で囲まれた文字列の最初の文字を出力するタスク
+
+- Associative Recall
+  
+  セットになっているアルファベットと数字の組に対して，与えられたアルファベットに対応する数字を出力するタスク
+
+これらの簡単にタスクに対して，以下のような結果が得られます．
+
+<section style="text-align: center;">
+
+![](images/h3/nlptask_res.png)
+
+</section>
+
+Attentionは完璧に解くことができますが，S4はなどの状態空間モデルは正確に解くことができません．
+このような言語に対する弱みを改善したのがH3です．
+
+## Attention-Likeな構造
+Induction HeadとAssociative Recallの結果から分かったことは，状態空間モデルはトークン同士を比較することができないことです．
+S4の基礎になっているHiPPOは，入力系列を直交多項式で近似しようとしているわけですから，そもそも入力同士を比較するような計算はしないのです．
+一方でAttentionは，QKVを用いて直接的に類似度を計算しているので，トークン同士の比較は大得意です．
+
+そこで，Attentionっぽい構造を取り入れたのがH3です．
+H3は以下のような構造をしています．
+
+<section style="text-align: center;">
+
+![](images/h3/arch.png)
+
+</section>
+
+QKVをそのまま取り入れているのでほぼAttentionですね．
+KVを先に計算しているのは，Linear Attentionを参考にしているからです．
+
+>[!NOTE]
+><details>
+><summary> Linear Attention </summary>
+>
+>Attentionの計算は次のように表せます．
+>$$
+>O_i = \frac{\sum_{j=1}^i \text{Sim}(Q_i, K_j) V_j}{\sum_{j=1}^i \text{Sim}(Q_i, K_j)} \in \mathbb{R}^d
+>$$
+>通常の計算では，$\text{Sim}(q, k)=e^{q^\top k}$ となります．
+>しかしLinear Attentionでは，類似度を計算する部分が $\text{Sim}(q, k)=\phi(q)^\top\phi(k)$ で表せると仮定します．
+>そうすることで，Attentionの計算は次のように書き直すことができます．
+>$$
+>O_i = \frac{\phi(Q_i)^\top \sum_{j=1}^i \phi(K_j) V_j^\top}{\phi(Q_i)^\top \sum_{j=1}^i \phi(K_j)}
+>$$
+>これにより，Attentionの計算時間を大幅に短縮することができます．
+></details>
+
+### Shift SSM
+過去の情報との類似度を計算するには，まずは過去の情報を保っておかなければなりません．
+そこで，次のような行列を考えます．
+$$
+x_{t} = \bar{A}x_{t-1} + \bar{B}u_{t} \\
+\bar{A}_{ij} = 
+\begin{cases}
+1 & \text{for } i-1=j \\
+0 & \text{otherwise}
+\end{cases}
+$$
+この行列は対角成分の1つ下のみが1で，それ以外が0の行列です．
+この行列をかけることによって，情報を1つだけずらすことができます．
+そのため，もし $B=e_1$ （第1要素が1でそれ以外が0のベクトル）の場合，$x_i=[u_i,u_{i-1},...,u_{i-m-1}]$ のように入力をそのまま $m$ ステップ分保存することになります．
+
+Shift SSMに $x^{\text{key}}$ を通した場合，直感的には次のようなベクトルを得ることができます．
+$$
+\left[ 0, x^{\text{key}}_1, ... , \sum_{k=1}^{l-1} x^{\text{key}}_k, ... , \sum_{k=1}^{L-1} x^{\text{key}}_k \right]
+$$
+
+### $\text{SSM}_\text{shift}(K)\odot V$
+この演算は要素積なので，Attention Weightのような役割を果たします．
+以下の式のように，過去の情報との比較を行っています．
+$$
+\left[ 0, x^{\text{key}}_1, ... , \sum_{k=1}^{l-1} x^{\text{key}}_k, ... , \sum_{k=1}^{L-1} x^{\text{key}}_k \right]
+\odot
+\left[ x^\text{val}_1, x^\text{val}_2, ... , x^\text{val}_l, ... , x^\text{val}_L \right]
+$$
+
+### Diag SSM
+この部分はS4Dと同じです．
+そのため，過去と比較した情報について上手くまとめている感じでしょう．
+
+### $Q \odot \text{SSM}_\text{diag}(\cdot)$
+最後にクエリと計算をしています．
+Linear Attentionをベースにしているのでイメージしづらいですが，なんとなく伝わったでしょうか？
+
+## アルゴリズム
+以上をまとめると次のようになります．
+
+<section style="text-align: center;">
+
+![](images/h3/algorithm.png)
+
+</section>
+
+## 実験結果
+言語モデルに対する結果を以下に示します．
+GPT-2とGPT-Neoとの比較ですが，さまざまなモデルサイズにおいて最良の結果になっています．
+Hybridとなっているのは，H3層とAttention層を混ぜているからです．
+どうやらH3層だけでは勝てないらしい...
+
+<section style="text-align: center;">
+
+![](images/h3/res1.png)
+
+</section>
+
+速度もTransformerに勝っています．
+以下は単位時間あたりに出力可能なトークン数を比較したものです．
+入力が長いほど差は顕著であり，最大2.4倍ほどの速度になります．
+
+<section style="text-align: center;">
+
+![](images/h3/res2.png)
+
+</section>
 
 # Mamba vs Transformer
 あくまで個人の見解ですが，mambaがTransformerの代替になることはないと思います．
