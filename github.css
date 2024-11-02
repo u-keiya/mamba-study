@@ -1224,3 +1224,9 @@ body {
   body>*:first-child>.heading-element:first-child {
     margin-top: 0 !important;
   }
+
+  /* Markdownの幅を固定する */
+.markdown-body {
+  max-width: 1000px; /* 固定したい幅に変更 */
+  margin: 0 auto;   /* 中央に配置 */
+}
