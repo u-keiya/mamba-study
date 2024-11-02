@@ -52,6 +52,7 @@
     - [Long Range Arena](#long-range-arena)
     - [時系列予測](#時系列予測)
     - [画像・テキスト](#画像テキスト)
+    - [S4D](#s4d)
   - [考察](#考察)
 - [Mamba vs Transformer](#mamba-vs-transformer)
 
@@ -137,8 +138,7 @@ P_5(x) &= \frac{1}{8} (63x^5 - 70x^3 + 15x).
 
 <section style="text-align: center;">
 
-![ルジャンドル多項式](images/lmu/legendre_polynomials.png)  
-*図2　ルジャンドル多項式*
+![ルジャンドル多項式](images/lmu/legendre_polynomials.png)
 
 </section>
 
@@ -165,8 +165,7 @@ $N$が大きくなるほど，近似の精度が高いことが分かるかと�
 
 <section style="text-align: center;">
 
-![ルジャンドル多項式](images/lmu/legendre_approx.png)  
-*図2　ルジャンドル多項式による近似*
+![ルジャンドル多項式](images/lmu/legendre_approx.png)
 
 </section>
 
@@ -1908,15 +1907,16 @@ $$
 
 </section>
 
+>[!NOTE]
+>後続研究により，$A=\Lambda-PP^*$ とした方が安定性があるとされています．
+>ここで紹介する結果は，$A=\Lambda-PP^*$ としたときの結果になります．
+
 ## アーキテクチャ
 モデルアーキテクチャについて軽く補足します．
 S4レイヤーは，$\mathbb{R}^L\rightarrow\mathbb{R}^L$ というように1次元の入力に対し，入力と等しい長さの出力を行います．
 もし入力特徴量が $H$ 個ある場合は，その分だけ層を並列します．
 そして，得られた出力 $\mathbb{R}^{H\times L}$ を位置に合わせて線形層でミックスするという操作を行います．
 そのため，層としての働きはAttention層とほぼ同じと考えていいと思います．
-
->[!NOTE]
->後続研究により，$A=\Lambda-PP^*$ とした方が安定性があるとされています．
 
 ## 実験結果
 ### Long Range Arena
@@ -1960,6 +1960,20 @@ S4層は，Self-Attention層に比べてパラメータ数が1/4なので，1つ
 <section style="text-align: center;">
 
 ![](images/s4/res4.png)
+
+</section>
+
+### S4D
+S4の後続研究の1つにS4Dという手法があります．
+S4Dでは，行列 $A$ を対角行列として学習させます．
+これまでの話では，対角化は難しいということでしたが，完全なHiPPOの枠組みを諦め，できる限りHiPPOを近似できるように努力することで，対角行列でもS4に匹敵する結果になることが示されています．
+
+結局のところS4の方が精度は高いのですが，対角行列とした方が計算の楽さや解釈性は高いですよね．
+そのシンプルさが売りといった感じです．
+
+<section style="text-align: center;">
+
+![](images/s4/s4d.png)
 
 </section>
 
