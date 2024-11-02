@@ -206,10 +206,10 @@ LMUでは，係数 $c_n$ の更新式を導きました．
 $$
 \theta \dot{\mathbf{m}}(t) = \mathbf{A} \mathbf{m}(t) + \mathbf{B} u(t)
 $$
+
 $$
 \begin{align*}
 \mathbf{A} &= \begin{bmatrix} a \end{bmatrix}_{ij} \in \mathbb{R}^{d\times d}, \quad a_{ij} = (2i+1)\begin{cases} -1 & \text{ if } i < j \\ (-1)^{i-j+1} & \text{ if } i \geq j \end{cases} \\
-
 \mathbf{B} &= \begin{bmatrix} b \end{bmatrix}_{ij} \in \mathbb{R}^{d\times 1}, \quad b_i = (2i+1)(-1)^i
 \end{align*} \\
 \quad i,j\in [0,d-1]
@@ -697,7 +697,6 @@ $$
 0 & \text{if } x > t 
 \end{cases} \\
 &= (t - x)^{\alpha} e^{-(t - x)} \mathbb{I}_{(-\infty, t]} \\
-
 p_n(t, x) &= \frac{\Gamma(n + 1)^{\frac{1}{2}}}{\Gamma(n + \alpha + 1)^{\frac{1}{2}}} L_n^{(\alpha)}(t - x)
 \end{align*}
 $$
@@ -756,14 +755,12 @@ $$
 $$
 \begin{align*}
 \frac{d}{dt} c(t) &= -Ac(t) + Bf(t) \\
-
 A &= \begin{bmatrix}
 \frac{1 + \beta}{2} & 0 & \cdots & 0 \\
 1 & \frac{1 + \beta}{2} & \cdots & 0 \\
 \vdots & \ddots & \ddots & \vdots \\
 1 & 1 & \cdots & \frac{1 + \beta}{2}
 \end{bmatrix} \\
-
 B &= \zeta^{-\frac{1}{2}} \cdot 
 \begin{bmatrix}
 \binom{\alpha}{0} \\
@@ -791,16 +788,13 @@ $$
 &= -\sum_{k=0}^{n-1} \int f \cdot g_n^{(t)} \frac{\omega^{(t)}}{(\chi^{(t)})^2} \\
 &\quad - \left( \frac{1 + \beta}{2} \right) \int f \cdot g_n^{(t)} \frac{\omega^{(t)}}{(\chi^{(t)})^2} + f(t) \cdot \zeta^{-\frac{1}{2}} L_n^{(\alpha)}(0) \\
 &= -\sum_{k=0}^{n-1} c_k(t) - \left( \frac{1 + \beta}{2} \right) c_n(t) + \Gamma(1 - \alpha)^{-\frac{1}{2}} \beta^{\frac{1 - \alpha}{2}} \binom{n + \alpha}{n} f(t) \\
-
 \frac{d}{dt} c(t) &= -Ac(t) + Bf(t) \\
-
 A &= \begin{bmatrix}
 \frac{1 + \beta}{2} & 0 & \cdots & 0 \\
 1 & \frac{1 + \beta}{2} & \cdots & 0 \\
 \vdots & \ddots & \ddots & \vdots \\
 1 & 1 & \cdots & \frac{1 + \beta}{2}
 \end{bmatrix} \\
-
 B &= \zeta^{-\frac{1}{2}} \cdot 
 \begin{bmatrix}
 \binom{\alpha}{0} \\
