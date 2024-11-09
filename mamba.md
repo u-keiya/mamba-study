@@ -68,7 +68,10 @@
   - [S4の問題点](#s4の問題点)
   - [選択的メカニズム](#選択的メカニズム)
   - [効率的な計算アルゴリズム](#効率的な計算アルゴリズム)
-    - [Scan](#scan)
+    - [parallel scan](#parallel-scan)
+    - [kernel fusion・activationの再計算](#kernel-fusionactivationの再計算)
+  - [アーキテクチャ](#アーキテクチャ-1)
+  - [実験結果](#実験結果-2)
 - [全体のまとめ](#全体のまとめ)
 - [Mamba vs Transformer](#mamba-vs-transformer)
 
@@ -2243,6 +2246,11 @@ Hybridとなっているのは，H3層とAttention層を混ぜているからで
 # Mamba
 非常に長い道のりでしたが，いよいよMambaを紹介します．
 ここまでついてきたならば，Mambaの内容は心配なほどあっさりに感じるかもしれません．
+<section style="text-align: center;">
+
+![](images/mamba/fig.png)
+
+</section>
 
 ## S4の問題点
 MambaでもH3と同様にS4の問題点を指摘するところから始まります．
@@ -2376,12 +2384,13 @@ $$
 ## 効率的な計算アルゴリズム
 効率的な計算については，実は大きな新規性はありません．
 次の3つの手法によって高速化を図ります．
-- 累積和の計算アルゴリズムScan
+- parallel scan
 - kernel fusion
 - activationの再計算
 
-### Scan
-Scanとは，累積和を並列に計算するためのアルゴリズムです．
+### parallel scan
+parallel scanとは，累積和を並列に計算するためのアルゴリズムです．
+
 以下の図のように累積和の計算とSSMの再帰計算にはシナジーがあります．
 
 <section style="text-align: center;">
@@ -2390,8 +2399,119 @@ Scanとは，累積和を並列に計算するためのアルゴリズムです�
 
 </section>
 
-そのため，scanをそのまま流用すれば，SSMの再帰計算を一部並列計算することができます．
+そのため，parallel scanをそのまま流用すれば，SSMの再帰計算を一部並列計算することができます．（このアイデア自体も新しいものではない）
 
+parallel scanは，二分木上で総和を計算していきますが，同じ階層のノードは並列計算可能であることを利用しています．
+
+parallel scanの詳細については以下の資料を参照してください．
+
+https://www.cs.princeton.edu/courses/archive/fall20/cos326/lec/21-02-parallel-prefix-scan.pdf
+
+### kernel fusion・activationの再計算
+モデルの学習・推論のボトルネックは，データを大容量・低速なHBMと小容量・高速なSRAM間で移動させる部分にあります．
+
+そのためMambaでは，この移動を最小限に抑えるためにkernel fusion・activationの再計算という工夫を行っています．
+
+kernel fusionは一般的な技術であり，複数の計算カーネルを1つにまとめることで効率化する手法のようです．
+
+activationの再計算は，本来勾配の計算に必要なactivationを保持するのではなく，逐一計算しなおすというものです．
+
+activationを保持するとHBMへ保存する必要が出てきてしまうため，より遅くなってしまうようです．
+
+ここまで読めば，冒頭のMambaの図が理解できるようになったと思います．
+
+## アーキテクチャ
+Mambaのアーキテクチャは以下のようになります．
+
+H3を活かしつつもH3よりもシンプルなアーキテクチャです．
+
+<section style="text-align: center;">
+
+![](images/mamba/arch.png)
+
+</section>
+
+>[!NOTE]
+>Transformerの知識をMambaに転移するという論文が発表されました．https://arxiv.org/abs/2408.15237
+>
+>この論文で用いられていた図を見ると，両者のアーキテクチャが結構似ていることが分かります．
+><section style="text-align: center;">
+>
+>![](images/mamba/arch_tm.png)
+>
+></section>
+
+## 実験結果
+まずは，冒頭で触れたS4の問題点が解消されたかどうかを見てみます．
+
+どちらのタスクにおいても解消されていることが分かりますが，注目するべきは右図です．
+
+これは外挿にどれだけ強いかを実験した結果です．
+
+縦の点線が学習で用いた入力の長さ（=256）を表しており，色のついた実線が推論における入力の長さと精度の関係を表しています．
+
+多くのモデルが学習した長さを超えると精度が低下する一方で，Mambaは少なくとも100万の長さでも精度が低下していません．
+
+なぜですかね？
+
+<section style="text-align: center;">
+
+![](images/mamba/res2.png)
+
+</section>
+
+次に言語タスクの性能です．
+
+スケーリング則が見られる上に，同程度のサイズのTransformerモデルより性能が高いことが分かります．
+
+<section style="text-align: center;">
+
+![](images/mamba/res3.png)
+
+</section>
+
+<section style="text-align: center;">
+
+![](images/mamba/res4.png)
+
+</section>
+
+最後に速度とメモリについてです．
+
+当然速いですね．
+特に大きなバッチサイズで顕著な差が出ます．
+
+<section style="text-align: center;">
+
+![](images/mamba/res5.png)
+
+</section>
+
+>[!NOTE]
+>### MambaがRejectされた原因
+>MambaはICLR 2024 でRejectされています．
+>これは，評価方法に疑問が持たれたからだそうです．
+>まず，これまで学術的価値の大部分を占めていたLong Range Arenaにおける評価がありません．
+>次に，生成文の精度をPerplexity（文の自然さ）でしか評価しておらず，MT-Benchなどの主要なベンチマークテストを行っていません．
+>このあたりが原因のようです．
+
+>[!NOTE]
+>### MambaとRNN(LSTM)との違いは何か？
+>MambaはLSTMと非常に似ているなと個人的に思いました．
+>そもそも再帰構造ですし，ゲートメカニズムもありますし．
+>
+>もちろん，MambaはRNNを1つのモジュールとして保持していますし，ゲートメカニズムについてもより一般的なメカニズムを持っています．
+>しかしこれらはLSTMでも達成可能なような気がしなくもないです．
+>
+>決定的な違いは何ですかね？
+>
+>これについて，著者のGu氏はインタビュー（https://www.youtube.com/watch?v=1zjMalKLHiA ）にて，LSTMなどの従来のRNNは非線形性を含めすぎたあまり，学習が上手く進まなかったという発言をしているそうです．
+>LSTMはtanhなどを使って記憶の更新を行う一方，MambaなどのSSMでは行列積によって記憶の更新を行います．
+>これが大きな違いの一つのようです．
+>
+>なお，LSTMの著者がxLSTMなるものを開発しました．https://arxiv.org/abs/2405.04517
+>
+>Mambaをはじめとする研究の流行に刺激されたのでしょうか？
 
 # 全体のまとめ
 - HiPPOは，長期依存を捉えるための効率的な記憶方法を提案しました．
@@ -2400,7 +2520,7 @@ Scanとは，累積和を並列に計算するためのアルゴリズムです�
 - S4は，LSSLの速度を大幅に改善しました．さらに，効果的なHiPPO1行列の学習方法も提案しました．
 - H3は，S4が自然言語処理に対処できるようにAttention-Likeな構造を提案しました．
 - Mambaは，S4が自然言語処理に対応できるようにパラメータを入力依存に拡張しました．
-  さらにその上で，効率的な計算方法について提案しました．
+  効率的な計算を行うことで，計算速度の低下を補いました．
 
 # Mamba vs Transformer
 あくまで個人の見解ですが，mambaがTransformerの完全な代替になることはないと思います．
