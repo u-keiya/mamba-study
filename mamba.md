@@ -72,6 +72,8 @@
     - [kernel fusion・activationの再計算](#kernel-fusionactivationの再計算)
   - [アーキテクチャ](#アーキテクチャ-1)
   - [実験結果](#実験結果-2)
+- [Mamba 2](#mamba-2)
+  - [SSMと構造化行列](#ssmと構造化行列)
 - [全体のまとめ](#全体のまとめ)
 - [Mamba vs Transformer](#mamba-vs-transformer)
 
@@ -2326,8 +2328,8 @@ Mambaに合わせて表記が若干変わっている点に注意してくださ
 
 $$
 \begin{align*}
-h_{t} &= \bar{A}h_{t-1} + \bar{B}x_{t} \\
-y_t &= Ch_t + Dx_t
+h_{t} &= \bar{A}_th_{t-1} + \bar{B}_tx_{t} \\
+y_t &= C_th_t + D_tx_t
 \end{align*}\\
 \bar{A} = \exp(\Delta A) \\
 \bar{B} = (\Delta A)^{-1}(\exp(\Delta A) - I)\Delta B
@@ -2478,7 +2480,7 @@ H3を活かしつつもH3よりもシンプルなアーキテクチャです．
 
 最後に速度とメモリについてです．
 
-当然速いですね．
+思ったより速いですね．
 特に大きなバッチサイズで顕著な差が出ます．
 
 <section style="text-align: center;">
@@ -2512,6 +2514,93 @@ H3を活かしつつもH3よりもシンプルなアーキテクチャです．
 >なお，LSTMの著者がxLSTMなるものを開発しました．https://arxiv.org/abs/2405.04517
 >
 >Mambaをはじめとする研究の流行に刺激されたのでしょうか？
+
+# Mamba 2
+前節にて，ついにMambaの全容を捉えたわけですが，正直S4ほどの感動はないですよね．
+そこまで意外ではないアイデアを出して，失われた効率性を既存の工夫によってなんとか補っている状態．（言い過ぎ）
+
+しかし，Mambaはここでは終わらず，より理論的な発展をします．
+Mamba 2の論文のタイトルは「Transformers are SSMs: Generalized Models and Efficient Algorithms Through Structured State Space Duality」といい，Transformerの変種がSSMと等価であることを示していきます．
+
+なぜTransformerとの等価性を示すのかというと，TransformerとGPUの相性がいいからです．
+MambaをはじめとするSSMは，計算量的にはTransformerよりも軽いですが，実践上だとTranformerの方が速かったりします．
+そこで，MambaをTransformerの計算と同じと捉えてあげることで，高速な行列演算や並列計算の恩恵を受けられるということです．
+
+それでは，SSMとTransformerの関係性を見ていきましょう．
+
+## SSMと構造化行列
+改めてMambaの式を書いておきます．
+$$
+\begin{align*}
+h_{t} &= \bar{A}_th_{t-1} + \bar{B}_tx_{t} \\
+y_t &= C^\top_th_t + D_tx_t
+\end{align*}
+$$
+
+このMambaの式を再帰計算をほどいて書いてみます．
+$$
+\begin{align*}
+h_{t} &= \bar{A}_t...\bar{A}_1\bar{B}_0x_0 + \bar{A}_t...\bar{A}_2\bar{B}_1x_1 + \dots + \bar{A}_t\bar{A}_{t-1}\bar{B}_{t-2}x_{t-2} + \bar{A}_t\bar{B}_{t-1}x_{t-1} + \bar{B}_tx_t \\
+&= \sum_{s=0}^t \left( \prod_{i=s+1}^t \bar{A}_i \right) \bar{B}_sx_s
+\end{align*}
+$$
+
+これを $y$ の式に代入します．
+通常 $D=0$ なので，それを考慮すると
+$$
+y_t = \sum_{s=0}^t C_t^\top \left( \prod_{i=s+1}^t \bar{A}_i \right) \bar{B}_sx_s
+$$
+
+そしてこの式は，次のような行列式に変形できます．
+$$
+\begin{align*}
+y &= Mx \\
+M_{ji} &:= C^\top_j \bar{A}_j ... \bar{A}_{i+1} \bar{B}_i
+\end{align*}
+$$
+
+行列形式で表すと次のような感じです．
+このように眺めると $M$ は下三角行列であることが分かります．
+$$
+\begin{pmatrix}y_0 \\ y_1 \\ y_2 \\ \vdots \\ y_{T-1} \end{pmatrix} = 
+\begin{pmatrix}
+C^\top_0 B_0 & 0 & 0 & \cdots & 0 \\
+C^\top_1 A_1 B_0 & C^\top_1 B_1 & 0 & \cdots & 0 \\
+C^\top_2 A_2 A_1 B_0 & C^\top_2 A_2 B_1 & C^\top_2 B_2 & \cdots & 0 \\
+\vdots & \vdots & \vdots & \ddots & \vdots \\
+C^\top_{T-1} A_{T-1} A_{T-2} \cdots A_1 B_0 & C^\top_{T-1} A_{T-1} A_{T-2} \cdots A_2B_1 & C^\top_{T-1} A_{T-1} A_{T-2} B_2 & \cdots & C^\top_{T-1} B_{T-1} \\
+\end{pmatrix}
+\begin{pmatrix}x_0 \\ x_1 \\ x_2 \\ \vdots \\ x_{T-1} \end{pmatrix}
+$$
+
+そしてこの行列 $M$ は半分離可能行列になっています．
+
+---
+**定義** : 半分離可能行列（semiseparable matrix）
+
+（下三角）行列 $M$ が $N$-半分離可能 であるとは，行列の下三角部分のすべての部分行列のランクが最大で $N$ であることをいう．
+ここで，$N$ を半分離可能行列の次数またはランクと呼ぶ．
+
+---
+
+半分離可能行列には、hierarchical semiseparable (HSS)，sequential semiseparable (SSS)など，さまざまな構造化された表現がありますが，ここではSSSについて扱っていきます．
+
+---
+**定義** : 系列半分離可能（sequential semiseparable，SSS）
+
+下三角行列 $M\in \mathbb{R}^{T\times T}$ が $N$-系列半分離可能であるとは，$B_0,...,B_{T-1},C_0,...,C_{T-1}\in\mathbb{R}^N$，$A_0,...,A_{T-1}\in\mathbb{R}^{N\times N}$ について以下のように書けることをいう．
+$$
+M_{ji} = C^\top_j A_j ... A_{i+1} B_i
+$$
+
+---
+
+>[!NOTE]
+>### 構造化行列とは？
+>構造化行列（structured matrix）とは，特定の構造や性質を持つ行列のことをいいます．
+>構造や性質を利用することで，計算効率を向上させたり，メモリの使用量を削減したりすることができます．
+>構造化行列の例としては，対角行列やトーピッツ行列，コーシー行列などがあります．
+>コーシー行列は，S4でも登場しており，計算効率を高めるために一役買っていました．
 
 # 全体のまとめ
 - HiPPOは，長期依存を捉えるための効率的な記憶方法を提案しました．
