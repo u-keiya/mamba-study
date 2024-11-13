@@ -74,6 +74,7 @@
   - [実験結果](#実験結果-2)
 - [Mamba 2](#mamba-2)
   - [SSMと構造化行列](#ssmと構造化行列)
+- [\\end{bmatrix}](#endbmatrix)
 - [全体のまとめ](#全体のまとめ)
 - [Mamba vs Transformer](#mamba-vs-transformer)
 
@@ -1418,22 +1419,22 @@ $$
 >ここで，対角行列 $\Lambda$ は次のように表されるとします．
 >$$
 >\Lambda=
->\begin{pmatrix} 
+>\begin{bmatrix} 
 >  \lambda_1 & 0 & \dots  & 0 \\
 >  0 & \lambda_2 & \dots  & 0 \\
 >  \vdots & \vdots & \ddots & \vdots \\
 >  0 & 0 & \dots  & \lambda_n
->\end{pmatrix} 
+>\end{bmatrix} 
 >$$
 >対角行列のべき乗は楽に計算することができ，
 >$$
 >\Lambda^k=
->\begin{pmatrix} 
+>\begin{bmatrix} 
 >  \lambda_1^k & 0 & \dots  & 0 \\
 >  0 & \lambda_2^k & \dots  & 0 \\
 >  \vdots & \vdots & \ddots & \vdots \\
 >  0 & 0 & \dots  & \lambda_n^k
->\end{pmatrix} 
+>\end{bmatrix} 
 >$$
 >となります．
 >すると，元の行列 $A$ のべき乗について以下が成り立ちます．
@@ -2562,38 +2563,18 @@ $$
 行列形式で表すと次のような感じです．
 このように眺めると $M$ は下三角行列であることが分かります．
 $$
-\begin{pmatrix}y_0 \\ y_1 \\ y_2 \\ \vdots \\ y_{T-1} \end{pmatrix} = 
-\begin{pmatrix}
-C^\top_0 B_0 & 0 & 0 & \cdots & 0 \\
-C^\top_1 A_1 B_0 & C^\top_1 B_1 & 0 & \cdots & 0 \\
-C^\top_2 A_2 A_1 B_0 & C^\top_2 A_2 B_1 & C^\top_2 B_2 & \cdots & 0 \\
+\begin{bmatrix}y_0 \\ y_1 \\ y_2 \\ \vdots \\ y_{T-1} \end{bmatrix} = 
+\begin{bmatrix}
+C^\top_0 \bar{B}_0 & 0 & 0 & \cdots & 0 \\
+C^\top_1 \bar{A}_1 \bar{B}_0 & C^\top_1 \bar{B}_1 & 0 & \cdots & 0 \\
+C^\top_2 \bar{A}_2 \bar{A}_1 \bar{B}_0 & C^\top_2 \bar{A}_2 \bar{B}_1 & C^\top_2 \bar{B}_2 & \cdots & 0 \\
 \vdots & \vdots & \vdots & \ddots & \vdots \\
-C^\top_{T-1} A_{T-1} A_{T-2} \cdots A_1 B_0 & C^\top_{T-1} A_{T-1} A_{T-2} \cdots A_2B_1 & C^\top_{T-1} A_{T-1} A_{T-2} B_2 & \cdots & C^\top_{T-1} B_{T-1} \\
-\end{pmatrix}
-\begin{pmatrix}x_0 \\ x_1 \\ x_2 \\ \vdots \\ x_{T-1} \end{pmatrix}
+C^\top_{T-1} \bar{A}_{T-1} \bar{A}_{T-2} \cdots \bar{A}_1 \bar{B}_0 & C^\top_{T-1} \bar{A}_{T-1} \bar{A}_{T-2} \cdots \bar{A}_2 \bar{B}_1 & C^\top_{T-1} \bar{A}_{T-1} \bar{A}_{T-2} \bar{B}_2 & \cdots & C^\top_{T-1} \bar{B}_{T-1} \\
+\end{bmatrix}
+\begin{bmatrix}x_0 \\ x_1 \\ x_2 \\ \vdots \\ x_{T-1} \end{bmatrix}
 $$
 
-そしてこの行列 $M$ は半分離可能行列になっています．
-
----
-**定義** : 半分離可能行列（semiseparable matrix）
-
-（下三角）行列 $M$ が $N$-半分離可能 であるとは，行列の下三角部分のすべての部分行列のランクが最大で $N$ であることをいう．
-ここで，$N$ を半分離可能行列の次数またはランクと呼ぶ．
-
----
-
-半分離可能行列には、hierarchical semiseparable (HSS)，sequential semiseparable (SSS)など，さまざまな構造化された表現がありますが，ここではSSSについて扱っていきます．
-
----
-**定義** : 系列半分離可能（sequential semiseparable，SSS）
-
-下三角行列 $M\in \mathbb{R}^{T\times T}$ が $N$-系列半分離可能であるとは，$B_0,...,B_{T-1},C_0,...,C_{T-1}\in\mathbb{R}^N$，$A_0,...,A_{T-1}\in\mathbb{R}^{N\times N}$ について以下のように書けることをいう．
-$$
-M_{ji} = C^\top_j A_j ... A_{i+1} B_i
-$$
-
----
+実はこの行列 $M$ は半分離可能行列とよばれる構造化行列になっています．
 
 >[!NOTE]
 >### 構造化行列とは？
@@ -2601,6 +2582,67 @@ $$
 >構造や性質を利用することで，計算効率を向上させたり，メモリの使用量を削減したりすることができます．
 >構造化行列の例としては，対角行列やトーピッツ行列，コーシー行列などがあります．
 >コーシー行列は，S4でも登場しており，計算効率を高めるために一役買っていました．
+
+---
+**定義3.1** : 半分離可能（semiseparable, SS）
+
+（下三角）行列 $M$ が $N$-半分離可能 であるとは，行列の下三角部分のすべての部分行列のランクが最大で $N$ であることをいう．
+ここで，$N$ を半分離可能行列の次数またはランクと呼ぶ．
+
+---
+
+半分離可能行列には、hierarchical semiseparable (HSS)，sequential semiseparable (SSS)など，さまざまな構造化された表現がありますが，ここではSSSについて扱っていきます．
+SSSの定義や性質について紹介します．
+
+---
+**定義3.2** : 系列半分離可能（sequential semiseparable，SSS）
+
+下三角行列 $M\in \mathbb{R}^{T\times T}$ が $N$-系列半分離可能であるとは，$B_0,...,B_{T-1},C_0,...,C_{T-1}\in\mathbb{R}^N$，$A_0,...,A_{T-1}\in\mathbb{R}^{N\times N}$ について以下のように書けることをいう．
+$$
+M_{ji} = C^\top_j A_j ... A_{i+1} B_i
+$$
+
+---
+**補題3.3**
+
+$N$-SSS行列 $M$ は $N$-SSである．
+
+**証明**
+
+行列 $M$ の下三角部分から任意の部分行列（$j\sim j'$行，$i\sim i'$列）を抜き出すと以下のように分解することができる．
+$$
+\begin{bmatrix}
+C^\top_j \bar{A}_j ... \bar{A}_{i+1} \bar{B}_i & \cdots & C^\top_{j} \bar{A}_{j} ... \bar{A}_{i'+1} \bar{B}_{i'} \\
+\vdots &  & \vdots \\
+C^\top_{j'} \bar{A}_{j'} ... \bar{A}_{i+1} \bar{B}_i & \cdots & C^\top_{j'} \bar{A}_{j'} ... \bar{A}_{i'+1} \bar{B}_{i'} \\
+\end{bmatrix}
+=
+\begin{bmatrix} C^\top_j \\ \vdots \\ C^\top_{j'} \bar{A}_{j'}...\bar{A}_{j+1} \end{bmatrix}
+\bar{A}_{j} ... \bar{A}_{i'+1}
+\begin{bmatrix} \bar{A}_{i'}...\bar{A}_{i+1} \bar{B}_i & \cdots & \bar{B}_{i'} \end{bmatrix}
+$$
+
+$A$ は $N\times N$ の行列であるため，この部分行列のランクは最大でも $N$ である．
+
+---
+**命題3.4**
+
+全ての$N$-SS行列は $N$-SSS表現を持つ．
+
+---
+
+定義3.2より，SSMの式はSSS行列と入力の積と見なすことができます．
+そして，補題3.3および命題3.4から，SSSとSSは等価であることが示されました．
+したがって，SSMの式はSS行列と入力の積と考えることができます．
+
+<section style="text-align: center;">
+
+![](images/mamba2/ssm-ss.png)
+
+</section>
+
+SSMの式が構造化行列の積で表されることが分かったことで，SSMの計算に非常に効率的な計算アルゴリズムが適用できるようになりました．
+
 
 # 全体のまとめ
 - HiPPOは，長期依存を捉えるための効率的な記憶方法を提案しました．
