@@ -75,6 +75,8 @@
 - [Mamba 2](#mamba-2)
   - [SSMと構造化行列](#ssmと構造化行列)
 - [\\end{bmatrix}](#endbmatrix)
+  - [Linear Attentionと構造化行列](#linear-attentionと構造化行列)
+  - [State Space Duality](#state-space-duality)
 - [全体のまとめ](#全体のまとめ)
 - [Mamba vs Transformer](#mamba-vs-transformer)
 
@@ -2569,7 +2571,7 @@ C^\top_0 \bar{B}_0 & 0 & 0 & \cdots & 0 \\
 C^\top_1 \bar{A}_1 \bar{B}_0 & C^\top_1 \bar{B}_1 & 0 & \cdots & 0 \\
 C^\top_2 \bar{A}_2 \bar{A}_1 \bar{B}_0 & C^\top_2 \bar{A}_2 \bar{B}_1 & C^\top_2 \bar{B}_2 & \cdots & 0 \\
 \vdots & \vdots & \vdots & \ddots & \vdots \\
-C^\top_{T-1} \bar{A}_{T-1} \bar{A}_{T-2} \cdots \bar{A}_1 \bar{B}_0 & C^\top_{T-1} \bar{A}_{T-1} \bar{A}_{T-2} \cdots \bar{A}_2 \bar{B}_1 & C^\top_{T-1} \bar{A}_{T-1} \bar{A}_{T-2} \bar{B}_2 & \cdots & C^\top_{T-1} \bar{B}_{T-1} \\
+C^\top_{T-1} \bar{A}_{T-1} \bar{A}_{T-2} \cdots \bar{A}_1 \bar{B}_0 & C^\top_{T-1} \bar{A}_{T-1} \bar{A}_{T-2} \cdots \bar{A}_2 \bar{B}_1 & C^\top_{T-1} \bar{A}_{T-1} \bar{A}_{T-2} ... \bar{A}_3 \bar{B}_2 & \cdots & C^\top_{T-1} \bar{B}_{T-1} \\
 \end{bmatrix}
 \begin{bmatrix}x_0 \\ x_1 \\ x_2 \\ \vdots \\ x_{T-1} \end{bmatrix}
 $$
@@ -2643,6 +2645,113 @@ $A$ は $N\times N$ の行列であるため，この部分行列のランクは
 
 SSMの式が構造化行列の積で表されることが分かったことで，SSMの計算に非常に効率的な計算アルゴリズムが適用できるようになりました．
 
+最後に少し強めの仮定ですが，$\bar{A}_t = a_t I$ という関係が成り立つとします．
+S4Dより，$A$ が対角行列であることは問題ないのですが，そのすべての要素が同じというのは強めの仮定だと思います．
+
+この仮定の上では $M_{ji}$ は，
+$$
+M_{ji} = a_j ... a_{i+1} C^\top_j B_i
+$$
+と変形できるので，
+$$
+\begin{align*}
+M &= L \odot (CB^\top) \\
+L &:= 
+\begin{bmatrix}
+1 & 0 & 0 & \cdots & 0 \\
+a_1 & 1 & 0 & \cdots & 0 \\
+a_2 a_1& a_2 & 1 & \cdots & 0 \\
+\vdots & \vdots & \vdots & \ddots & \vdots \\
+a_{T-1} a_{T-2} ... a_1 & a_{T-1} a_{T-2} ... a_2 & a_{T-1} a_{T-2} ... a_3 & \cdots & 1 \\
+\end{bmatrix}
+\end{align*}
+$$
+
+ここで，$L$ は1-SS行列になっています．
+
+以上を踏まえると，SSMの式は以下のようになります．
+$$
+y = (L \odot (CB^\top)) x
+$$
+
+## Linear Attentionと構造化行列
+Linear Attentionは，H3でも説明しましたが，改めて式を示します．
+
+Attentionの計算は次のように表せます．
+$$
+O_i = \frac{\sum_{j=1}^i \text{Sim}(Q_i, K_j) V_j}{\sum_{j=1}^i \text{Sim}(Q_i, K_j)} \in \mathbb{R}^d
+$$
+通常の計算では，$\text{Sim}(q, k)=e^{q^\top k}$ となりますが，Linear Attentionでは，類似度を計算する部分が $\text{Sim}(q, k)=\phi(q)^\top\phi(k)$ で表せると仮定します．
+そうすることで，Attentionの計算は次のように書き直すことができます．
+$$
+O_i = \frac{\phi(Q_i)^\top \sum_{j=1}^i \phi(K_j) V_j^\top}{\phi(Q_i)^\top \sum_{j=1}^i \phi(K_j)}
+$$
+これにより，Attentionの計算時間を大幅に短縮することができます．
+
+>[!NOTE]
+>### Linear Attentionの種類
+><details>
+>
+>Linear Attentionにおけるカーネル $\phi(\cdot)$ は色々なものが提案されています．
+>- Original : $x \mapsto 1 +\text{elu}(x)$
+>- Random Feature Attention : $x \mapsto (\cos(x),\sin(x))$
+>- Performer : $x \mapsto 2^{-1/2} (\exp(x),\exp(-x))$
+>- cosFormer : $x \mapsto (x\cos(\pi t/2T),\sin(\pi t/2T))$
+></details>
+
+ここで，分母の計算等を無視すると，
+$$
+y = QK^\top V
+$$
+と書くことができます．
+（$Q,K$ に対しては，カーネルを適用済みとします．）
+
+また，多くの場合，Masked Attentionといって，未来の情報を推論に使えないようにする仕組みが備わっています．
+このmaskを $L$ とすると，
+$$
+y = (L \odot QK^\top) V
+$$
+という形になります．
+
+mask $L$ に関しては，手法によりいろいろなものが提案されていますが，多くの場合Causal mask と呼ばれる以下のmaskが適用されます．
+$$
+L =
+\begin{bmatrix}
+1 & 0 & \cdots & 0 \\
+1 & 1 & \cdots & 0 \\
+\vdots & \vdots & \ddots & \vdots \\
+1 & 1 & \cdots & 1 \\
+\end{bmatrix}
+$$
+この $L$ は，1-SS行列になっています．
+
+これでSSMと全く同じ形の式ができました．
+図にすると次のような関係性です．
+
+<section style="text-align: center;">
+
+![](images/mamba2/structured-attention.png)
+
+</section>
+
+## State Space Duality
+ここまでで，SSMとLinear Attentionが全く同じ式で表現できることが分かりました．
+
+ただし条件として
+
+- $A$ が単位行列のスカラー倍であること
+- Linear Attentionのmaskが1-SS行列であること
+
+が要求されます．
+
+これで2つのモデルを同一視できるので，このクラスをState Space Duality（SSD）と名付けます．
+2つの対応関係を図にまとめると以下のようになります．
+
+<section style="text-align: center;">
+
+![](images/mamba2/ssd.png)
+
+</section>
 
 # 全体のまとめ
 - HiPPOは，長期依存を捉えるための効率的な記憶方法を提案しました．
