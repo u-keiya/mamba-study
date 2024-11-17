@@ -77,6 +77,10 @@
 - [\\end{bmatrix}](#endbmatrix)
   - [Linear Attentionと構造化行列](#linear-attentionと構造化行列)
   - [State Space Duality](#state-space-duality)
+  - [効率的な計算アルゴリズム](#効率的な計算アルゴリズム-1)
+    - [対角ブロック](#対角ブロック)
+    - [非対角ブロック](#非対角ブロック)
+  - [アルゴリズムの解釈](#アルゴリズムの解釈)
 - [全体のまとめ](#全体のまとめ)
 - [Mamba vs Transformer](#mamba-vs-transformer)
 
@@ -300,9 +304,9 @@ HiPPOの流れは大まかに以下のようになります．
 2. 近似式から係数 $c_n$ を抽出する
 3. 係数 $c_n$ を用いて記憶をアップデートする
 
-HiPPOでは，近似多項式がもはや直交である必要もありません．
+HiPPOの本質は入力を圧縮することなので，近似多項式がもはや直交である必要もありません．
 
-とにかく基底となる多項式の集合を選び，その基底が張る空間に入力信号を射影してやればいいのです．
+ですが，直交多項式の方が効率的に圧縮できますし，きっと十分に研究されてきているので使わない手はない気がします．
 
 >[!NOTE]
 >実は基底が多項式である必要もないそうです．しかしこの論文では基底を多項式として進めています．
@@ -570,8 +574,8 @@ $$
 \langle g_n^{(t)}, g_m^{(t)} \rangle_{\nu^{(t)}}=\lambda_n^2 \delta_{n,m}
 $$
 
-入力信号 $f:[0,\infty)\rightarrow \mathbb{R}$ を $C^1$ であるとし，各時刻 $t$ までの信号 ${f(x)}_{\leq t}={f(x)}_{x\leq t}$ の圧縮表現を得ることを考える．
-基底 $g_n^{(t)}$ を用いると，展開係数は次のように計算できる．
+入力信号 $f:[0,\infty)\rightarrow \mathbb{R}$ を $C^1$ であるとし，各時刻 $t$ までの信号 ${f(x)}_{\leq t}={f(x)}_{x\leq t}$ の圧縮表現を得ることを考えます．
+基底 $g_n^{(t)}$ を用いると，展開係数は次のように計算できます．
 $$
 \begin{align*}
 c_n(t) &= \langle {f(x)}_{\leq t},g_n^{(t)} \rangle_{\nu^{(t)}} \\
@@ -581,7 +585,7 @@ c_n(t) &= \langle {f(x)}_{\leq t},g_n^{(t)} \rangle_{\nu^{(t)}} \\
 &= \zeta(t)^{-\frac{1}{2}} \lambda_n \int f p_n^{(t)} \frac{\omega^{(t)}}{\chi^{(t)}}
 \end{align*}
 $$
-また， ${f(x)}_{\leq t}$ の近似式は以下のように計算できる．
+また， ${f(x)}_{\leq t}$ の近似式は以下のように計算できます．
 $$
 \begin{align*}
 f_{\leq t} \approx g^{(t)} :=& \sum_{n=0}^{N-1} \langle f_{\leq t},g_n^{(t)} \rangle_{\nu^{(t)}} \frac{g_n^{(t)}}{\|g_n^{(t)}\|_{\nu^{(t)}}^2} \\
@@ -589,17 +593,17 @@ f_{\leq t} \approx g^{(t)} :=& \sum_{n=0}^{N-1} \langle f_{\leq t},g_n^{(t)} \ra
 =& \sum_{n=0}^{N-1} \lambda_n^{-1} \zeta(t)^{\frac{1}{2}} c_n(t)p_n^{(t)} \chi^{(t)}
 \end{align*}
 $$
-この式こそが $\text{proj}_t$ である．また， $\text{coef}_t$ は，係数ベクトル $c(t)=(c_n(t))_{n\in[N]}$ を抽出する操作である．
+この式こそが $\text{proj}_t$ です．
+また， $\text{coef}_t$ は，係数ベクトル $c(t)=(c_n(t))_{n\in[N]}$ を抽出する操作です．
 
-さらに係数 $c_n^{(t)}$ をオンラインで計算するため，時間微分する．
+さらに係数 $c_n^{(t)}$ をオンラインで計算するため，時間微分します．
 $$
 \begin{align*}
 \frac{d}{dt}c_n(t) &= \frac{d}{dt}\zeta(t)^{-\frac{1}{2}} \lambda_n \int f p_n^{(t)} \frac{\omega^{(t)}}{\chi^{(t)}} \\
-&= \zeta (t)^{-\frac{1}{2}}\lambda_n \left\{ \int f(x)\left( \frac{\partial}{\partial t}p_n(t,x) \right) \frac{\omega}{\chi}dx + \int f(x) p_n(t,x)  \left( \frac{\partial}{\partial t}\frac{\omega}{\chi}(t,x)\right) dx \right\}
+&= \zeta (t)^{-\frac{1}{2}}\lambda_n \int f(x)\left( \frac{\partial}{\partial t}p_n(t,x) \right) \frac{\omega}{\chi}dx + \zeta (t)^{-\frac{1}{2}}\lambda_n \int f(x) p_n(t,x)  \left( \frac{\partial}{\partial t}\frac{\omega}{\chi}(t,x)\right) dx
 \end{align*}
 $$
-ここで， $\zeta$ は時間に対して定数であると仮定している．
-あれ，基底は直交多項式に限らないと言っていたけど，結局直交多項式前提で証明が進んでいた気がする...グラムシュミットの直交化を使えばいいってことかな...？
+ここで， $\zeta$ は時間に対して定数であると仮定してます．
 
 </details>
 
@@ -609,15 +613,25 @@ $$
 
 これにより，これらの係数 $c(t)$ および最適な多項式近似をオンラインで計算することが可能になります．
 
-特に，$\frac{d}{dt} P^{(t)}_n$ は $n-1$ 次の多項式（$x$ の多項式）であるため，$P_0, \ldots, P_{n-1}$ の線形結合として書けます．
+特に，$\frac{d}{dt} p^{(t)}_n$ は $x$ の $n$ 次の多項式であるため，$p_0, \ldots, p_n$ の線形結合として書けます．
 
-そのため式 (20) の最初の項は $c_0, \ldots, c_{n-1}$ の線形結合になります．
+そのため第1項は
+$$
+\begin{align*}
+\zeta (t)^{-\frac{1}{2}}\lambda_n \int f(x)\left( \frac{\partial}{\partial t}p_n(t,x) \right) \frac{\omega}{\chi}dx
+&= \zeta (t)^{-\frac{1}{2}}\lambda_n \int f(x)\left( \sum_{i=0}^n d_i(t) p_i(t,x) \right) \frac{\omega}{\chi}dx \\
+&= \sum_{i=0}^n d_i(t) \zeta (t)^{-\frac{1}{2}}\lambda_n \int f(x) p_i(t,x) \frac{\omega}{\chi}dx \\
+&= \sum_{i=0}^n d_i(t) c_i(t)
+\end{align*}
+$$
 
-多くの重み関数 $\omega$ に対して，$\frac{\partial}{\partial t} \frac{\omega}{\chi}$ を $\frac{\omega}{\chi}$ 自身の式で表現できるようなスケーリング関数 $\psi$ を見つけることができます．
+となり，$c_0, \ldots, c_n$ の線形結合になります．
 
-この場合，式 (20) の第二項も $c_0, \ldots, c_{N-1}$ および入力 $f$ の線形結合となります．
+また，多くの重み関数 $\omega$ に対して，$\frac{\partial}{\partial t} \frac{\omega}{\chi}$ を $\frac{\omega}{\chi}$ 自身の式で表現できるようなスケーリング関数を見つけることができます．
 
-したがって，これによりしばしば $c(t)$ に対する閉じた形の線形 ODE が得られます．
+この場合，式 (20) の第二項も $c_0, \ldots, c_n$ の線形結合となります．
+
+したがって，これによりしばしば $c(t)$ に対する閉じた形の線形 ODE $\frac{d}{dt}c_n(t) = -A(t)c(t) + B(t)f(t)$ が得られます．
 
 ## HiPPOの具体化
 さて，いよいよ具体的な基底を定め，これまで求めた式から手法を求めていきます．
@@ -2750,6 +2764,174 @@ $$
 <section style="text-align: center;">
 
 ![](images/mamba2/ssd.png)
+
+</section>
+
+## 効率的な計算アルゴリズム
+SSDは，Linear Attentionを含む行列積の形で表されるため，既にGPUフレンドリーな計算を行うことができます．
+
+しかしここでは，より効率的な計算について考えます．
+計算量や空間計算量について分かりやすく表現するために，$\text{BMM}(B,M,N,K)$ という表記を導入します．
+これは，$M\times K$ と $K\times N$ の行列積をバッチサイズ $B$ 個分行うという意味です．
+このとき，
+
+- 計算量 : $O(BMNK)$
+- 空間計算量 : $O(B(MK+KN+MN))$
+
+となります．
+
+効率性の鍵はブロック分解です．
+行列 $M$ を $Q\times Q$ のブロックに分解します．
+$$
+M = 
+\begin{bmatrix}
+M^{(0,0)} &  &  &  \\
+M^{(0,1)} & M^{(1,1)} &  &  \\
+\vdots & \vdots & \ddots &  \\
+M^{(0,T/Q-1)} & M^{(1,T/Q-1)} & \cdots & M^{(T/Q-1,T/Q-1)}
+\end{bmatrix}
+$$
+
+以下は $T=9,Q=3$ のときの例です．
+ブロック分解をすると，非対角成分を低ランクの積で表現することができます．
+
+論文では，$A_{j:i} = A_j ... A_{i+1}$ と表記しています．
+
+<section style="text-align: center;">
+
+![](images/mamba2/block_m.png)
+
+</section>
+
+### 対角ブロック
+対角ブロックは $\frac{T}{Q}$ 個の $Q\times Q$ の小さな1-SS行列になっています．
+$i$ 番目のブロックに注目すると，
+$$
+\begin{align*}
+y_i &= M_ix_i \\
+y_i &= \begin{bmatrix} y_{iQ} \\ \vdots \\ y_{(i+1)Q-1} \end{bmatrix} \in \mathbb{R}^{Q\times P} \\
+x_i &= \begin{bmatrix} x_{iQ} \\ \vdots \\ x_{(i+1)Q-1} \end{bmatrix} \in \mathbb{R}^{Q\times P} \\
+M_i &= (L_i \odot C_i^\top B_i) \in \mathbb{R}^{Q\times Q} \\
+B_i &= \begin{bmatrix} B_{iQ} \\ \vdots \\ B_{(i+1)Q-1} \end{bmatrix} \in \mathbb{R}^{N\times Q} \\
+C_i &= \begin{bmatrix} C_{iQ} \\ \vdots \\ C_{(i+1)Q-1} \end{bmatrix} \in \mathbb{R}^{N\times Q} \\
+L_i &= 
+\begin{bmatrix}
+1 &  &  \\
+a_{iQ+1} & 1 & \\
+a_{iQ+2}a_{iQ+1} & a_{iQ+2} & 1 &\\
+\vdots & \vdots & \vdots & \ddots &  \\
+a_{(i+1)Q-1} ... a_{iQ+1} & a_{(i+1)Q-1} ... a_{iQ+2} & a_{(i+1)Q-1} ... a_{iQ+3} & \dots & 1 \\
+\end{bmatrix}
+\end{align*}
+$$
+
+このような感じになります．
+Mambaでは，入力は1次元を考えていましたが，Mamba 2では，$P$ 次元を考えます．
+
+対角ブロックに関しては素直に計算するので，
+
+- $C_i^\top B_i$ は，$\text{BMM}(T/Q,Q,Q,N)$
+- $L_i \odot C_i^\top B_i$ は，要素ごとの計算なので $(T/Q,Q,Q)$ （BMMではない）
+- $M_ix_i$ は，$\text{BMM}(T/Q,Q,P,Q)$
+
+となります．
+
+### 非対角ブロック
+次のブロックを例に考えてみます．
+非対角ブロックは，3つに分解されます．
+$$
+\begin{bmatrix}
+C_3^\top A_{3:2} \\
+C_4^\top A_{4:2} \\
+C_5^\top A_{5:2}
+\end{bmatrix}
+A_{2:2}
+\begin{bmatrix}
+B_0^\top A_{2:0} \\
+B_1^\top A_{2:1} \\
+B_2^\top A_{2:2}
+\end{bmatrix}^\top
+$$
+
+まずは各部分の行列のサイズを考えます．
+
+左部分：
+$$
+\begin{bmatrix}
+C_3^\top A_{3:2} \\
+C_4^\top A_{4:2} \\
+C_5^\top A_{5:2}
+\end{bmatrix}
+$$
+$C^\top A$ は，$\mathbb{R}^{1\times N}\times\mathbb{R}^{N\times N}$ の計算なので，この部分のサイズは $\mathbb{R}^{Q\times N}$ になります．
+
+中央部分：$\mathbb{R}^{N\times N}$ の行列積なのでサイズは $\mathbb{R}^{N\times N}$ です．
+
+右部分：左部分と同様で $\mathbb{R}^{Q\times N}$ になります．
+
+よって，入力との積を考えると，
+- 右部分×入力 : $\text{BMM}(T/Q,N,P,Q)$
+- 中央部分 : 中央部分は対角行列の積（MambaのScan）あるいは，1-SS用の効率的なアルゴリズムを用います．
+- 左部分 : $\text{BMM}(T/Q,Q,P,N)$
+
+---
+
+ここで，簡単のため $N=P=Q$ （隠れ次元数＝特徴量数＝ブロックサイズ）とすると，全ての計算が $\text{BMM}(T/N,N,N,N)$ となります．
+そのため，Mamba 2の計算量と空間計算量は，
+- 計算量 : $O(TN^2)$
+- 空間計算量 : $O(TN)$
+
+となり，系列長 $T$ に対して線形に増加します．
+他の手法と比較すると次の通りです．
+
+<section style="text-align: center;">
+
+![](images/mamba2/flops.png)
+
+</section>
+
+>[!NOTE]
+>1-SSのための効率的なアルゴリズムとして論文内では5つほど紹介されています．
+>どの手法も $O(T),O(T\log T)$ 程のようです．
+
+## アルゴリズムの解釈
+対角ブロックや非対角ブロックの左・中央・右部分がどのような意味を持っているのかについて考えます．
+対角ブロックについては，入力と出力が直接結びついているので，非対角ブロックについて考えます．
+
+そもそものSSMの式を思い出すと，$A$ は隠れ状態の更新，$B$ は入力を隠れ状態に，$C$ は隠れ状態を出力にする役割がありました．
+
+これを頭に入れて先ほどの例を見てみます．
+$$
+\begin{bmatrix}
+C_3^\top A_{3:2} \\
+C_4^\top A_{4:2} \\
+C_5^\top A_{5:2}
+\end{bmatrix}
+A_{2:2}
+\begin{bmatrix}
+B_0^\top A_{2:0} \\
+B_1^\top A_{2:1} \\
+B_2^\top A_{2:2}
+\end{bmatrix}^\top
+$$
+
+右部分では，入力を $B$ によって隠れ状態にした後，$A$ によって更新を行っています．
+ここで，$t=0$ の入力は $A_1,A_2$ によって2回更新されます．
+また，$t=1$ の入力は $A_2$ によって1回更新され，$t=2$ の入力は更新されません．
+つまり，各ブロック内の最終的な隠れ状態を求めていることになります．
+
+次に中央部分では，隠れ状態の更新を行っています．
+ここでは，各ブロックの最終的な隠れ状態を出力部分のブロック（対角ブロック）まで更新する役割があります．
+中央部分によって，各ブロックの隠れ状態が，出力部分へと集約されていきます．
+
+最後に左部分では，隠れ状態を更新した後，$C$ によって出力になります．
+ここでは，前までのブロックの最終的な隠れ状態から，各出力 $y_t$ へと隠れ状態を反映させる役割があります．
+
+以上を図にまとめると次のようになります．
+
+<section style="text-align: center;">
+
+![](images/mamba2/algo_interpret.png)
 
 </section>
 
