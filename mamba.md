@@ -74,13 +74,14 @@
   - [実験結果](#実験結果-2)
 - [Mamba 2](#mamba-2)
   - [SSMと構造化行列](#ssmと構造化行列)
-- [\\end{bmatrix}](#endbmatrix)
   - [Linear Attentionと構造化行列](#linear-attentionと構造化行列)
   - [State Space Duality](#state-space-duality)
   - [効率的な計算アルゴリズム](#効率的な計算アルゴリズム-1)
     - [対角ブロック](#対角ブロック)
     - [非対角ブロック](#非対角ブロック)
   - [アルゴリズムの解釈](#アルゴリズムの解釈)
+  - [モデルアーキテクチャ](#モデルアーキテクチャ)
+  - [実験結果](#実験結果-3)
 - [全体のまとめ](#全体のまとめ)
 - [Mamba vs Transformer](#mamba-vs-transformer)
 
@@ -2450,16 +2451,6 @@ H3を活かしつつもH3よりもシンプルなアーキテクチャです．
 
 </section>
 
->[!NOTE]
->Transformerの知識をMambaに転移するという論文が発表されました．https://arxiv.org/abs/2408.15237
->
->この論文で用いられていた図を見ると，両者のアーキテクチャが結構似ていることが分かります．
-><section style="text-align: center;">
->
->![](images/mamba/arch_tm.png)
->
-></section>
-
 ## 実験結果
 まずは，冒頭で触れたS4の問題点が解消されたかどうかを見てみます．
 
@@ -2631,8 +2622,7 @@ $$
 C^\top_j \bar{A}_j ... \bar{A}_{i+1} \bar{B}_i & \cdots & C^\top_{j} \bar{A}_{j} ... \bar{A}_{i'+1} \bar{B}_{i'} \\
 \vdots &  & \vdots \\
 C^\top_{j'} \bar{A}_{j'} ... \bar{A}_{i+1} \bar{B}_i & \cdots & C^\top_{j'} \bar{A}_{j'} ... \bar{A}_{i'+1} \bar{B}_{i'} \\
-\end{bmatrix}
-=
+\end{bmatrix}=
 \begin{bmatrix} C^\top_j \\ \vdots \\ C^\top_{j'} \bar{A}_{j'}...\bar{A}_{j+1} \end{bmatrix}
 \bar{A}_{j} ... \bar{A}_{i'+1}
 \begin{bmatrix} \bar{A}_{i'}...\bar{A}_{i+1} \bar{B}_i & \cdots & \bar{B}_{i'} \end{bmatrix}
@@ -2877,7 +2867,7 @@ $C^\top A$ は，$\mathbb{R}^{1\times N}\times\mathbb{R}^{N\times N}$ の計算�
 ---
 
 ここで，簡単のため $N=P=Q$ （隠れ次元数＝特徴量数＝ブロックサイズ）とすると，全ての計算が $\text{BMM}(T/N,N,N,N)$ となります．
-そのため，Mamba 2の計算量と空間計算量は，
+学習では，全てのブロックを並列で計算できるので，Mamba 2の計算量と空間計算量は，
 - 計算量 : $O(TN^2)$
 - 空間計算量 : $O(TN)$
 
@@ -2935,6 +2925,66 @@ $$
 
 </section>
 
+## モデルアーキテクチャ
+Mamba 2のモデルアーキテクチャを以下に示します．
+
+Mambaからの大きな変更はありませんが，MambaではSSMブロックを $X\mapsto Y$ として捉えていたところを，Transformerとの関連を示すために，$A,X,B,C\mapsto Y$ というように明示します．
+
+細かい構造（左図・右図など）はまだ改善の余地があるようです．
+
+<section style="text-align: center;">
+
+![](images/mamba2/arch.png)
+
+</section>
+
+TransformerとMambaの関連性が示されたことでマルチヘッドアテンションを導入することができます．
+入力の次元を $P$ としていましたが，これをヘッドの次元として，$P=64,128$ くらいで固定します．
+もし隠れ次元として256次元ある場合は，$P=64$ のヘッドを4つ用意することになります．
+
+## 実験結果
+まずは言語性能に関する実験結果です．
+Mambaよりもさらに性能が上がっています．
+
+<section style="text-align: center;">
+
+![](images/mamba2/res1.png)
+
+</section>
+
+次に速度性能です．
+Scanに比べてさらに速度が上がっています．
+
+<section style="text-align: center;">
+
+![](images/mamba2/res2.png)
+
+</section>
+
+全てをMambaブロックで置き換えるのではなく，一部をTransformerブロックに置き換えた方が精度が上がります．
+
+<section style="text-align: center;">
+
+![](images/mamba2/res3.png)
+
+</section>
+
+その他，スケーリング則やアブレーションについても実験が行われています．
+
+>[!NOTE]
+>Transformerの知識をMambaに転移するという論文が発表されました．https://arxiv.org/abs/2408.15237
+>
+>両者のアーキテクチャが結構似ているので，知識転移が可能なようです．
+><section style="text-align: center;">
+>
+>![](images/mamba/arch_tm.png)
+>
+></section>
+
+>[!NOTE]
+>Mamba 2の実験結果から分かるように，MambaとTransformerを組み合わせるという方向性が今の流れのようです．
+>実際にJambaやZambaといったハイブリッド手法が提案されています．
+
 # 全体のまとめ
 - HiPPOは，長期依存を捉えるための効率的な記憶方法を提案しました．
 - LSSLは，HiPPOによって効率的な記憶ができるようになった線形RNNを1つのモジュール（層）として扱えるようにしました．
@@ -2943,19 +2993,19 @@ $$
 - H3は，S4が自然言語処理に対処できるようにAttention-Likeな構造を提案しました．
 - Mambaは，S4が自然言語処理に対応できるようにパラメータを入力依存に拡張しました．
   効率的な計算を行うことで，計算速度の低下を補いました．
+- Mamba 2は，MambaとTransformerの関連性を示して，Mambaの解釈性や計算効率向上を行いました．
 
 # Mamba vs Transformer
 あくまで個人の見解ですが，mambaがTransformerの完全な代替になることはないと思います．
-mambaはRNNであり（？），どんなに長い系列も固定長のベクトルに押し込んでしまいます．
+MambaはRNNであり（？），どんなに長い系列も固定長のベクトルに押し込んでしまいます．
 しかしTransformerは，Attention機構によってどんな系列についても1トークンずつベクトルとして扱います．
 そのため，当然Transformerの方が精度が出ると思います．
 
-しかしmambaにも良いところがあり，それは長期的な依存関係を捉えられるという点です．
-系列が長くなってくると，Transformerで処理するのはかなり厳しくなりますが，mambaであれば苦ではありません．
+しかしMambaにも良いところがあり，それは長期的な依存関係を捉えられるという点です．
+系列が長くなってくると，Transformerで処理するのはかなり厳しくなりますが，Mambaであれば苦ではありません．
 そのため，ものすごく長い系列についてはmambaが優位に立つ可能性もなくはないと思います．
 
 個人的には，両者のハイブリッドが良いのだろうと思います．
-実際にハイブリッド手法（Jamba，Zamba）が提案されていますので，何かしら嬉しいことがあるのでしょう．
 
 例えば，100万トークンの入力があったとします．
 Transformerではさすがに厳しいです．
