@@ -417,7 +417,7 @@ body {
   
   body h4 {
     font-weight: var(--base-text-weight-semibold, 600);
-    font-size: 1em;
+    font-size: 1.25em;
   }
   
   body h5 {

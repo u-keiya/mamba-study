@@ -2,112 +2,102 @@
 
 <font size=10> Mambaを知ろう </font>
 
-あらゆる最新AIはアーキテクチャとしてTransformerを採用しており，まさにTransformerの時代といえると思います．
-
-そんな中，Mambaという新しい手法が登場し，「**Transformerを凌駕しうる**」と期待されているようです．
-
+あらゆる最新AIはアーキテクチャとしてTransformerを採用しており，まさにTransformerの時代といえると思います．  
+そんな中，Mambaという新しい手法が登場し，「**Transformerを凌駕しうる**」と期待されているようです．  
 そんな注目の最新手法Mambaについて解説していこうと思います．
 
 <details>
 <summary> 目次 </summary>
 
-- [0. 注意](#0-注意)
-- [1. はじめに](#1-はじめに)
-- [2. 事前知識](#2-事前知識)
-  - [2.1. RNN](#21-rnn)
-  - [2.2. LSTM](#22-lstm)
-- [3. LMU (Legendre Memory Unit)](#3-lmu-legendre-memory-unit)
-  - [ルジャンドル多項式による近似](#ルジャンドル多項式による近似)
-    - [ルジャンドル多項式とは？](#ルジャンドル多項式とは)
-    - [ルジャンドル多項式による関数近似](#ルジャンドル多項式による関数近似)
-    - [なぜ入力を近似するのか？](#なぜ入力を近似するのか)
-  - [LMUの工夫](#lmuの工夫)
-- [HiPPO (Higher-order Polynomial Projection Operations)](#hippo-higher-order-polynomial-projection-operations)
-  - [問題設定](#問題設定)
-  - [HiPPOフレームワーク](#hippoフレームワーク)
-  - [HiPPOの具体化](#hippoの具体化)
-    - [HiPPO-LegT (Translated Legendre)](#hippo-legt-translated-legendre)
-    - [HiPPO-LagT (Translated Laguerre)](#hippo-lagt-translated-laguerre)
-    - [HiPPO-LegS (Scaled Legendre)](#hippo-legs-scaled-legendre)
-  - [離散化](#離散化)
-  - [HiPPO-LegSの性質](#hippo-legsの性質)
-  - [実験](#実験)
-- [LSSL (Linear State-Space Layers)](#lssl-linear-state-space-layers)
-  - [定式化](#定式化)
-  - [LSSL ⇔ RNN](#lssl--rnn)
-    - [LSSL ⇒ RNN](#lssl--rnn-1)
-    - [RNN ⇒ LSSL](#rnn--lssl)
-  - [LSSL ⇔ Convolution](#lssl--convolution)
-    - [LSSL ⇒ Convolution](#lssl--convolution-1)
-    - [Convolution ⇒ LSSL](#convolution--lssl)
-  - [表現力](#表現力)
-  - [学習](#学習)
-- [S4 (Structured State Space Sequence model)](#s4-structured-state-space-sequence-model)
-  - [対角化のモチベーション](#対角化のモチベーション)
-  - [Normal Plus Low-Rank (NPLR)とDiagonal Plus Low-Rank (DPLR)](#normal-plus-low-rank-nplrとdiagonal-plus-low-rank-dplr)
-  - [計算アルゴリズム](#計算アルゴリズム)
-    - [定式化](#定式化-1)
-    - [アルゴリズムの詳細](#アルゴリズムの詳細)
-  - [アーキテクチャ](#アーキテクチャ)
-  - [実験結果](#実験結果)
-    - [Long Range Arena](#long-range-arena)
-    - [時系列予測](#時系列予測)
-    - [画像・テキスト](#画像テキスト)
-    - [S4D](#s4d)
-  - [考察](#考察)
-- [H3 (Hungry Hungry HiPPOs)](#h3-hungry-hungry-hippos)
-  - [S4の弱点](#s4の弱点)
-  - [Attention-Likeな構造](#attention-likeな構造)
-    - [Shift SSM](#shift-ssm)
-    - [$\\text{SSM}\_\\text{shift}(K)\\odot V$](#textssm_textshiftkodot-v)
-    - [Diag SSM](#diag-ssm)
-    - [$Q \\odot \\text{SSM}\_\\text{diag}(\\cdot)$](#q-odot-textssm_textdiagcdot)
-  - [アルゴリズム](#アルゴリズム)
-  - [実験結果](#実験結果-1)
-- [Mamba](#mamba)
-  - [S4の問題点](#s4の問題点)
-  - [選択的メカニズム](#選択的メカニズム)
-  - [効率的な計算アルゴリズム](#効率的な計算アルゴリズム)
-    - [parallel scan](#parallel-scan)
-    - [kernel fusion・activationの再計算](#kernel-fusionactivationの再計算)
-  - [アーキテクチャ](#アーキテクチャ-1)
-  - [実験結果](#実験結果-2)
-- [Mamba 2](#mamba-2)
-  - [SSMと構造化行列](#ssmと構造化行列)
-  - [Linear Attentionと構造化行列](#linear-attentionと構造化行列)
-  - [State Space Duality](#state-space-duality)
-  - [効率的な計算アルゴリズム](#効率的な計算アルゴリズム-1)
-    - [対角ブロック](#対角ブロック)
-    - [非対角ブロック](#非対角ブロック)
-  - [アルゴリズムの解釈](#アルゴリズムの解釈)
-  - [モデルアーキテクチャ](#モデルアーキテクチャ)
-  - [実験結果](#実験結果-3)
-- [全体のまとめ](#全体のまとめ)
-- [Mamba vs Transformer](#mamba-vs-transformer)
+- [1. 注意](#1-注意)
+- [2. はじめに](#2-はじめに)
+- [3. 事前知識](#3-事前知識)
+  - [3.1. RNN](#31-rnn)
+  - [3.2. LSTM](#32-lstm)
+  - [3.3. Transformer](#33-transformer)
+- [4. LMU (Legendre Memory Unit)](#4-lmu-legendre-memory-unit)
+  - [4.1. ルジャンドル多項式による近似](#41-ルジャンドル多項式による近似)
+    - [4.1.1. ルジャンドル多項式とは？](#411-ルジャンドル多項式とは)
+    - [4.1.2. ルジャンドル多項式による関数近似](#412-ルジャンドル多項式による関数近似)
+    - [4.1.3. なぜ入力を近似するのか？](#413-なぜ入力を近似するのか)
+  - [4.2. LMUの工夫](#42-lmuの工夫)
+- [5. HiPPO (Higher-order Polynomial Projection Operations)](#5-hippo-higher-order-polynomial-projection-operations)
+  - [5.1. 問題設定](#51-問題設定)
+  - [5.2. HiPPOフレームワーク](#52-hippoフレームワーク)
+  - [5.3. HiPPOの具体化](#53-hippoの具体化)
+    - [5.3.1. HiPPO-LegT (Translated Legendre)](#531-hippo-legt-translated-legendre)
+    - [5.3.2. HiPPO-LagT (Translated Laguerre)](#532-hippo-lagt-translated-laguerre)
+    - [5.3.3. HiPPO-LegS (Scaled Legendre)](#533-hippo-legs-scaled-legendre)
+  - [5.4. 離散化](#54-離散化)
+  - [5.5. HiPPO-LegSの性質](#55-hippo-legsの性質)
+  - [5.6. 実験](#56-実験)
+- [6. LSSL (Linear State-Space Layers)](#6-lssl-linear-state-space-layers)
+  - [6.1. 定式化](#61-定式化)
+  - [6.2. LSSLの表現力](#62-lsslの表現力)
+    - [6.2.1. LSSL ⇔ RNN](#621-lssl--rnn)
+      - [6.2.1.1. LSSL ⇒ RNN](#6211-lssl--rnn)
+    - [6.2.2. RNN ⇒ LSSL](#622-rnn--lssl)
+    - [6.2.3. LSSL ⇔ Convolution](#623-lssl--convolution)
+      - [6.2.3.1. LSSL ⇒ Convolution](#6231-lssl--convolution)
+      - [6.2.3.2. Convolution ⇒ LSSL](#6232-convolution--lssl)
+    - [6.2.4. 表現力のまとめ](#624-表現力のまとめ)
+  - [6.3. 学習](#63-学習)
+- [7. S4 (Structured State Space Sequence model)](#7-s4-structured-state-space-sequence-model)
+  - [7.1. 対角化のモチベーション](#71-対角化のモチベーション)
+  - [7.2. Normal Plus Low-Rank (NPLR)とDiagonal Plus Low-Rank (DPLR)](#72-normal-plus-low-rank-nplrとdiagonal-plus-low-rank-dplr)
+  - [7.3. 計算アルゴリズム](#73-計算アルゴリズム)
+    - [7.3.1. 定式化](#731-定式化)
+    - [7.3.2. アルゴリズムの詳細](#732-アルゴリズムの詳細)
+  - [7.4. アーキテクチャ](#74-アーキテクチャ)
+  - [7.5. 実験結果](#75-実験結果)
+    - [7.5.1. Long Range Arena](#751-long-range-arena)
+    - [7.5.2. 時系列予測](#752-時系列予測)
+    - [7.5.3. 画像・テキスト](#753-画像テキスト)
+    - [7.5.4. S4D](#754-s4d)
+  - [7.6. 考察](#76-考察)
+- [8. H3 (Hungry Hungry HiPPOs)](#8-h3-hungry-hungry-hippos)
+  - [8.1. S4の弱点](#81-s4の弱点)
+  - [8.2. Attention-Likeな構造](#82-attention-likeな構造)
+  - [8.3. アルゴリズム](#83-アルゴリズム)
+  - [8.4. 実験結果](#84-実験結果)
+- [9. Mamba](#9-mamba)
+  - [9.1. S4の問題点](#91-s4の問題点)
+  - [9.2. 選択的メカニズム](#92-選択的メカニズム)
+  - [9.3. 効率的な計算アルゴリズム](#93-効率的な計算アルゴリズム)
+    - [9.3.1. parallel scan](#931-parallel-scan)
+    - [9.3.2. kernel fusion・activationの再計算](#932-kernel-fusionactivationの再計算)
+  - [9.4. アーキテクチャ](#94-アーキテクチャ)
+  - [9.5. 実験結果](#95-実験結果)
+- [10. Mamba 2](#10-mamba-2)
+  - [10.1. SSMと構造化行列](#101-ssmと構造化行列)
+  - [10.2. Linear Attentionと構造化行列](#102-linear-attentionと構造化行列)
+  - [10.3. State Space Duality](#103-state-space-duality)
+  - [10.4. 効率的な計算アルゴリズム](#104-効率的な計算アルゴリズム)
+    - [10.4.1. 対角ブロック](#1041-対角ブロック)
+    - [10.4.2. 非対角ブロック](#1042-非対角ブロック)
+  - [10.5. アルゴリズムの解釈](#105-アルゴリズムの解釈)
+  - [10.6. モデルアーキテクチャ](#106-モデルアーキテクチャ)
+  - [10.7. 実験結果](#107-実験結果)
+- [11. 全体のまとめ](#11-全体のまとめ)
+- [12. Mamba vs Transformer](#12-mamba-vs-transformer)
 
 </details>
 
 
-# 0. 注意
+# 1. 注意
 解説中たくさんの数式が出てきます．  
 知識不足により，完全に理解できていなかったり，不正確な表現をしてしまうかもしれません．
 
 また，note機能を使ってちょっとした解説などを挟みます．  
-読みにくいものになってしまうかもしれません．
+読みにくくなるかもしれません．
 
 >[!NOTE]
 >解説など
 
-ご了承ください．
-
-
-# 1. はじめに
-Mambaは理論によって支えられている手法です．
-
-そのため，Mambaの論文だけを解説するのではなく，Mambaにいたる軌跡をたどることで理解を深めていきます．
-
+# 2. はじめに
+Mambaは理論によって支えられている手法です．  
+そのため，Mambaの論文だけを解説するのではなく，Mambaにいたる軌跡をたどることで理解を深めていきます．  
 ここでは以下の流れに沿って解説します．
-
 
 1. LMU (Legendre Memory Unit)  *NeurIPS 2019
 2. HiPPO (Higher-order polynomial projection operations)  *NeurIPS 2020
@@ -115,56 +105,70 @@ Mambaは理論によって支えられている手法です．
 4. S4 (Structured State Space Sequence model)  *ICLR 2022
 5. H3 (Hungry Hungry HiPPOs)  *ICLR 2023
 6. Mamba  *ICLR 2024 Rejected
-7. Mamba 2
-
+7. Mamba 2  *ICML 2024
 
 錚々たる顔ぶれですが頑張りましょう．
 
 
-# 2. 事前知識
-本題に入る前に事前知識について確認していきましょう．
-
-できる限り事前知識を必要としないように解説していきますが，RNNとLSTMについては軽くでも知っておいた方がいいので触れておきます．
-
+# 3. 事前知識
+本題に入る前に事前知識について確認します．  
+ほとんど事前知識は要らないですが，RNNとLSTMについては軽く触れておきます．  
 RNNとLSTMについてある程度の理解がある人はこのセクションを飛ばしてください．
 
-## 2.1. RNN
-後で書く
+## 3.1. RNN
+RNN（Recurrent Neural Network）とは，時系列データや言語などの時系列データを扱うために再帰構造を取り入れたニューラルネットワークです．  
+通常のニューラルネットワークは，入力情報を中間層でごちゃ混ぜにしてしまうので，時系列を考慮することができません．  
+再帰構造によって，前の情報を次へと渡すことができるようになります．
 
-## 2.2. LSTM
-後で書く
+---
 
+<center><img src="images/rnn.png" width="60%"></center>
 
-# 3. LMU (Legendre Memory Unit)
-LMUは連続信号を対象とするRNNの一種です．
+## 3.2. LSTM
+LSTM（Long Short-Term Memory）とは，RNNに記憶セル $c$ を付けることで長期記憶できるように改良した手法です．  
+忘却ゲート，入力ゲート，出力ゲートの3つのゲートを持ち，入力情報をどの程度記憶セルに反映させるかを動的に決定することができます．  
+3つのシグモイド関数 $\sigma$ がこの決定を司っています．
 
-連続信号は絶え間なく入力されるため，信号を保存するには無限の容量が必要になってしまいます．
+---
 
-そのため，いかに入力情報を圧縮するかが重要になります．
+<center><img src="images/lstm.png" width="60%"></center>
 
-LMUは，**入力信号をルジャンドル多項式によって近似する**ことで情報を圧縮します．
+## 3.3. Transformer
+おまけですが，Transformerについてもほんの少し触れます．  
+Transformerは，Attentionという機構を持ったニューラルネットワークです．  
+かなり正確性に欠けますが，図にすると次のような感じです．  
+RNNとの大きな違いは，RNNが1つ前の状態を見るのに対して，Transformerでは過去全ての状態を見ます．  
+そのため，Transformerは情報を圧縮することなく扱うことができ，高い性能を発揮しています．（しかも早い）
 
+---
+
+<center><img src="images/transformer.png" width="60%"></center>
+
+# 4. LMU (Legendre Memory Unit)
+LMUは連続的な信号を扱うために提案されたRNNの一種です．  
+通常扱われるデータは，あるサンプリング周波数の計測機器によって計測された離散的なデータですが，私たちの脳は世界からの連続的な信号を扱っています．（もしかしたらサンプリングしているのかもしれないが...）  
+そこで，連続的な信号についても扱えるようにしてみようというものです．
+
+連続信号は絶え間なく入力されるため，信号を保存するには無限の容量が必要になってしまいます．  
+そのため，いかに入力情報を圧縮するかが連続信号を扱う上で重要になります．  
+LMUは，**入力信号をルジャンドル多項式によって近似**することで情報を圧縮します．  
 これにより効率的にデータを記憶することができ，長期的な依存関係を学習することができます．
 
-<section style="text-align: center;">
+---
 
-![結果](images/lmu/result1.png)
+<center><img src="images/lmu/result1.png" width="30%"></center>
 
-</section>
+## 4.1. ルジャンドル多項式による近似
+### 4.1.1. ルジャンドル多項式とは？
+ルジャンドル多項式とは，「ルジャンドルの微分方程式」を満たすルジャンドル関数のうち次数が非負整数のものをいいます．
 
-それでは詳細を見ていきましょう．
-
-## ルジャンドル多項式による近似
-### ルジャンドル多項式とは？
-ルジャンドル多項式とは，「ルジャンドルの微分方程式」を満たすルジャンドル関数のうち次数が非負整数のものを言い，次のような形をしています．
-
-$$
+$$\tag{1}
 P_n(x) = \frac{1}{2^n n!} \frac{d^n}{dx^n} \left( (x^2 - 1)^n \right)
 $$
 
 この数式はロドリゲスの公式による表現で，帰納的定義にしたがった形は次の通りです．
 
-$$
+$$\tag{2}
 P_n(x) = 2^{n} \cdot \sum_{k=0}^{n} x^{k} \binom{n}{k} \binom{\frac{n+k-1}{2}}{2}
 $$
 
@@ -180,98 +184,74 @@ P_2(x) &= \frac{1}{2} (3x^2 - 1), \\
 P_3(x) &= \frac{1}{2} (5x^3 - 3x), \\
 P_4(x) &= \frac{1}{8} (35x^4 - 30x^2 + 3), \\
 P_5(x) &= \frac{1}{8} (63x^5 - 70x^3 + 15x).
-\end{align*}
+\end{align*}\tag{3}
 $$
 
 図示するとこんな感じです．
+ルジャンドル多項式は区間 $[-1,1]$ に対して定義されています．
 
-<section style="text-align: center;">
+---
 
-![ルジャンドル多項式](images/lmu/legendre_polynomials.png)
+<center><img src="images/lmu/legendre_polynomials.png" width="60%"></center>
 
-</section>
+---
 
-図を見て気付いた人もいるかもしれませんが，ルジャンドル多項式は区間 $[-1,1]$ に対して定義されています．
-
-そして重要なのは，ルジャンドル多項式は**直交多項式系**の1つということです．
-
+重要なポイントは，ルジャンドル多項式は**直交多項式系**の1つということです．  
 直交多項式系については後ほど詳しく触れますが，「直交」とは2つの多項式 $P_n,P_m(n\neq m)$ について以下が成り立つことをいいます．
 
-$$
+$$\tag{4}
 \langle P_n, P_m \rangle = \int P_n(x)P_m(x) \omega (x)dx = 0
 $$
 
-$\omega(x)$ は重み関数です．
+ここで $\omega(x)$ は重み関数です．
 
-### ルジャンドル多項式による関数近似
+### 4.1.2. ルジャンドル多項式による関数近似
 ルジャンドル多項式によって関数 $f(x)$ を近似するとき，次の式が成り立ちます．
 
 $$
-f(x) \approx \sum_{n=0}^{N-1} c_n P_n(x) \\
-c_n = \frac{2n + 1}{2} \int_{-1}^{1} f(x)P_n(x)dx
+\begin{align*}
+f(x) &\approx \sum_{n=0}^{N-1} c_n P_n(x) \\
+c_n &= \frac{2n + 1}{2} \int_{-1}^{1} f(x)P_n(x)dx
+\end{align*}\tag{5}
 $$
 
 $f(x)$ をルジャンドル多項式の線形和によって表現し，その係数が $c_n$ になっています．
 
+こんなのでちゃんと近似できるのかと思いましたが，しっかり近似できるようです．  
+以下は，$f(x)=\sin(\pi x) + \sin(2\pi x) + \sin(3\pi x)$ を近似した様子です．  
+$N$ （ルジャンドル多項式の数）が大きくなるほど，近似の精度が高いことが分かります．
 
-こんなのでちゃんと近似できるのかと思いましたが，しっかり近似できるようです．
+---
 
-以下は，$f(x)=\sin(\pi x) + \sin(2\pi x) + \sin(3\pi x)$ を近似した様子です．
+<center><img src="images/lmu/legendre_approx.png" width="50%"></center>
 
-$N$が大きくなるほど，近似の精度が高いことが分かるかと思います．
+### 4.1.3. なぜ入力を近似するのか？
+さて，ルジャンドル多項式による関数近似が分かったところで，なぜ入力信号を近似するのか説明します．
 
-<section style="text-align: center;">
+ポイントは「情報の圧縮」と「情報の分離」です．
 
-![ルジャンドル多項式](images/lmu/legendre_approx.png)
+- 「情報の圧縮」  
+LMUでは入力信号が連続的だった場合を考えています．  
+連続的ということは，$\varDelta t = 0$ でデータが入力されるということであり，無限のデータポイントを扱うことになります．  
+しかしメモリは有限なので，連続的な信号を保存しておくことはできません．   
+そこでルジャンドル多項式で近似すると，入力信号の特性が係数ベクトルという形で表現することができます．  
+信号を保存しなくても，係数から信号を再現することができるようになるのです．
 
-</section>
+- 「情報の分離」  
+ルジャンドル多項式は直交多項式であるという話をしました．  
+多項式が直交するということは，他の多項式と独立した情報を持つということです．  
+そのため，抽出した係数は互いに独立した情報を保持しており，効率的に情報を得ることができます．
 
-### なぜ入力を近似するのか？
-さて，ここまではルジャンドル多項式がどのようなもので，どうやって関数近似するかを見てきました．
-
-しかし，なぜ入力信号をルジャンドル多項式で近似するのでしょうか？
-
-それには，「情報の圧縮」と「情報の分離」という2つの大きなメリットがあります．
-
-
-まずは「情報の圧縮」についてです．
-
-LMUでは入力信号が連続的だった場合を考えています．
-
-連続的ということは，$\varDelta t = 0$ でデータが入力されるということであり，膨大なデータポイントを扱うことになります．
-
-しかしメモリは有限です．
-連続的な信号を扱うことができません．
-
-これを有限のメモリで対処するための手段として，ルジャンドル多項式で近似するのです．
-
-ルジャンドル多項式で近似すると，その係数をベクトルとして保存すれば，入力信号の特性を保持することができます．
-
-そしてこれが「情報の圧縮」になるというわけです．
-
-
-次に「情報の分離」についてです．
-
-先ほど，ルジャンドル多項式は直交多項式であるという話をしました．
-
-多項式が直交するということは，他の多項式と独立した情報を持つということです．
-
-そのため，抽出した係数は互いに独立した情報を保持しており，効率的に情報を得ることができるのです．
-
-## LMUの工夫
-ここまでルジャンドル多項式で近似する方法からそのメリットについて話してきました．
-
+## 4.2. LMUの工夫
+ルジャンドル多項式で近似すれば連続的な信号を扱えるということがお分かりいただけたと思います．  
 しかし，実は大きな落とし穴があります．
 
-それは，係数 $c_n$ を計算することが難しいということです．
-
+それは，係数 $c_n$ を計算することが難しいということです．  
 理由は入力信号を近似するためには，やはり過去の信号を保存しておかなければならないからです．
 
 そこでLMUでは，信号をオンラインで受け取り，即座に近似係数 $c_n$ を更新する式を導きました．
 
-それがこちら．
-
-$$
+$$\tag{6}
 \theta \dot{\mathbf{m}}(t) = \mathbf{A} \mathbf{m}(t) + \mathbf{B} u(t)
 $$
 
@@ -287,17 +267,14 @@ $$
 
 この式は，$c_n$ に関する線形常微分方程式であり，$c_n$ の更新について記述しています．
 
-と言われてもなんのこっちゃですよね．
-
+・・・と言われてもなんのこっちゃ分からないと思います．
 ですが今はこの式が分からなくて問題ありません．
 
-ここで理解していただきたいのは，連続信号を扱うために直交多項式で近似したいというモチベーションです．
-
+ここで理解していただきたいのは，連続信号を扱うために直交多項式で近似したいというモチベーションです．  
 そこさえ理解していただければ，次のHiPPOに進むことができます．
 
-# HiPPO (Higher-order Polynomial Projection Operations)
-HiPPOはLMUを一般化したものです．
-
+# 5. HiPPO (Higher-order Polynomial Projection Operations)
+HiPPOはLMUを一般化したものです．  
 近似に用いる多項式をルジャンドル多項式に限らずに，係数 $c_n$ の更新式を導きます．
 
 HiPPOの流れは大まかに以下のようになります．
@@ -305,33 +282,29 @@ HiPPOの流れは大まかに以下のようになります．
 2. 近似式から係数 $c_n$ を抽出する
 3. 係数 $c_n$ を用いて記憶をアップデートする
 
-HiPPOの本質は入力を圧縮することなので，近似多項式がもはや直交である必要もありません．
-
-ですが，直交多項式の方が効率的に圧縮できますし，きっと十分に研究されてきているので使わない手はない気がします．
+HiPPOの本質は入力を圧縮した表現を獲得することなので，近似多項式がもはや直交である必要もありません．  
+ですが，直交多項式の方が効率的に圧縮できますし，十分に研究されてきているので使わない手はない気がします．
 
 >[!NOTE]
->実は基底が多項式である必要もないそうです．しかしこの論文では基底を多項式として進めています．
+>実は基底が多項式である必要もないそうです．しかしこの論文では基底を直交多項式として進めています．
 
-## 問題設定
-時刻 $t\geq 0$ における入力信号を $f(t) \in \mathbb{R}$，時刻 $t$ までに得られた入力信号の履歴を $f_{\leq t}:=f(x)|_{x\leq t}$ と表記します．
+## 5.1. 問題設定
+時刻 $t\geq 0$ における入力信号を $f(t) \in \mathbb{R}$，時刻 $t$ までに得られた入力信号の履歴を $f_{\leq t}:=f(x)|_{x\leq t}$ と表記します．  
+測度は時間とともに変化するものとし，各時刻 $t$ に対して，$\mu^{(t)}$ を $(-\infty, t]$ 上で定義される測度とします．
 
+>[!NOTE]
+>任意の確率測度 $\mu$ が $\mathbb{R}$ 上で定義されているとき，二乗可積分関数の空間に内積
+>$$\tag{7}
+>\langle f, g \rangle _\mu = \int_{-\infty}^{\infty} f(x)g(x) \, d\mu(x)
+>$$
+>が与えられ，これによりヒルベルト空間 $H_\mu$ と対応するノルム
+>$$\tag{8}
+>\|f\|_{L^2(\mu)} = \langle f, f \rangle _\mu^{1/2}
+>$$
+>が定義されます．
 
-任意の確率測度 $\mu$ が区間 $[0, \infty)$ 上で定義されているとき，二乗可積分関数の空間に内積
-$$
-\langle f, g \rangle _\mu = \int_{0}^{\infty} f(x)g(x) \, d\mu(x)
-$$
-が与えられ，これによりヒルベルト空間 $H_\mu$ と対応するノルム
-$$
-\|f\|_{L^2(\mu)} = \langle f, f \rangle _\mu^{1/2}
-$$
-が定義されます．
-
-
-測度は時間とともに変化するものとし，各時刻 $t$ に対して，$\mu^{(t)}$ を $(-1, t]$ 上で定義される測度とします．
-
-このとき，$f_t$ を近似する $g^{(t)} \in \mathcal{G}$ は，$\|f_t - g^{(t)}\|_{L^2(\mu^{(t)})}$ を最小化します．
-
-課題は，与えられた $\mu^{(t)}$ に対して最適化問題を閉じた形でどのように解くか，そしてこれらの係数を $t \to \infty$ のときにオンラインでどのように維持するかです．
+このとき，$f_t$ を近似する $g^{(t)} \in \mathcal{G}$ は，$\|f_t - g^{(t)}\|_{L^2(\mu^{(t)})}$ を最小化します．  
+課題は，与えられた $\mu^{(t)}$ に対して最適化問題をどのように解くか，そしてこれらの係数をオンラインでどのように更新するかです．
 
 >[!NOTE]
 >### 測度ってどんなものだろうか？
@@ -340,85 +313,66 @@ $$
 >
 >「測度とは」と検索をかけてみると，「集合の大きさを測るもの」という説明とともに定義やら性質やらが出てきます．
 >
->ただ，数式では分かりにくいので直感的なイメージを考えてみることにします．
->
+>ただ，数式では分かりにくいので直感的なイメージを考えてみることにします．  
 >目の前に大きさが全く同じ鉄球と木球があるとします．
->
 >この2つの球の大きさを比べてみます．
-><div align="center">
-><img src="images/balls.png" width="30%">
-></div>
 >
->大きさを比べるとなると，直径を比較したり，表面積を比較したり，体積を比較したり色々ありますが，今回は全く同じ大きさの球なのでいずれも同じになりますね．
+><center><img src="images/balls.png" width="30%"></center>
 >
->しかし質量で比較した場合はどうでしょう？
->
+>大きさを比べるとなると，直径や表面積，体積など色々ありますが，今回は全く同じ大きさの球なのでいずれも同じになりますね．  
+>しかし質量で比較した場合はどうでしょう？  
 >当然鉄球の方が重いですよね．
->
 >なぜなら鉄球の方が**密度**が高いからです．
 >
 >これを2次元空間で考えてみます．（3次元でもいいです．）
 >
-><div align="center">
-><img src="images/circles.png" width="40%">
-></div>
+><center><img src="images/circles.png" width="40%"></center>
 >
 >この空間で質量を求めるにはどうしたらいいでしょうか？
->
 >**密度**をどのようにして取り入れたらいいでしょうか？
 >
 >その答えが測度です．
 >
->測度は，空間内の「濃さ」の分布を決めています．
->
+>測度は，空間内の「濃さ」の分布を決めています．  
 >もし空間内の「濃さ」が下図のようになっていたら．鉄球の方が重いということのイメージも付きやすいですよね．
 >
-><div align="center">
-><img src="images/circles_heat.png" width="40%">
-></div>
+><center><img src="images/circles_heat.png" width="40%"></center>
 >
 >実際この先，測度 $\mu$ に対して
->$$
+>$$\tag{9}
 >d\mu=\omega(x)dx
 >$$
->なんて関係式が出てきますが，これはまさに $x$ に対して $\omega(x)$ で重み付けしたものを測度 $\mu$ としているのです．
->
->LMUで重み関数が出てきましたが，その正体がこれになります．
->
+>という関係式が出てきますが，これはまさに $x$ に対して $\omega(x)$ で重み付けしたものを測度 $\mu$ としているのです．  
+>直交多項式の「直交」についての説明（式 (4)）で重み関数が出てきましたが，その正体がこれになります．  
 >ちなみに，空間内の濃さが一様である場合はルベーグ測度といいます．
 >
->さて，長くなりましたが以上を踏まえると，今回の問題設定における測度とは，過去データの重要度にあたります．
->
->下図を考えた場合，最近のデータほど重要視する（＝大きな重みを付ける）という意味になります．
->
+>さて，長くなりましたが以上を踏まえると，今回の問題設定における測度とは，過去データの重要度にあたります．  
+>下図を考えた場合，最近のデータほど重要視する（＝大きな重みを付ける）という意味になります．  
 >このことさえ理解できていれば，この先に出てくる測度には困りません．
-><div align="center">
-><img src="images/fx.png" width="40%">
-></div>
->（体積と密度の関係や確率的な期待値なんかは，測度と関わりがありそうな気がする...）
+>
+><center><img src="images/fx.png" width="40%"></center>
 ></details>
 
-## HiPPOフレームワーク
-HiPPOフレームワークの定義を紹介します．
+## 5.2. HiPPOフレームワーク
+HiPPOのフレームワークを定義します．
 
 ---
 **定義：HiPPO**
 
-時間変化する $(-\infty, t]$ でサポートされる測度族 $\mu^{(t)}$，$N$ 次元の多項式が張る部分空間 $\mathcal{G}$，そして連続入力信号 $f: \mathbb{R}_{\geq 0} \to \mathbb{R}$ が与えられたとき，$f$ を最適化された投影係数 $c:\mathbb{R}_{\geq 0} \to \mathbb{R}^N$ に移す演算 HiPPO を定義する．
-この演算は，以下の性質を持つ投影演算子 $\text{proj}_t$ と，係数抽出演算子 $\text{coef}_t$ をすべての時間ステップ $t$ で求め，それらの合成 $\text{coef}_t \circ \text{proj}_t$ である．（つまり，$(\text{hippo}(f))(t) = \text{coef}_t(\text{proj}_t(f))$ である．）
+$(-\infty, t]$ でサポートされる時間変化する測度族 $\mu^{(t)}$，$N$ 次元の多項式が張る部分空間 $\mathcal{G}$，そして連続入力信号 $f: \mathbb{R}_{\geq 0} \to \mathbb{R}$ が与えられたとき，$f$ を最適化された投影係数 $c:\mathbb{R}_{\geq 0} \to \mathbb{R}^N$ に移す演算 HiPPO を定義する．
+この演算は，以下の性質を持つ投影演算子 $\text{proj}_t$ と，係数抽出演算子 $\text{coef}_t$ をすべての時間ステップ $t$ で求め，それらの合成 $\text{coef}_t \circ \text{proj}_t$ である．  
+（つまり，$(\text{hippo}(f))(t) = \text{coef}_t(\text{proj}_t(f))$ である．）
 
 1. $\text{proj}_t$ は，時刻 $t$ までの信号 $f$，つまり $f_{\leq t} := f(x)|_{x \leq t}$ を，推論誤差 $|f_{\leq t} - g^{(t)}|_{L_2(\mu^{(t)})}$ を最小にする多項式 $g^{(t)} \in \mathcal{G}$ に射影する．
 2. $\text{coef}_t : \mathcal{G} \to \mathbb{R}^N$ は，多項式 $g^{(t)}$ を，測度 $\mu^{(t)}$ に関して定義された直交多項式の基底関数の係数ベクトル $c(t) \in \mathbb{R}^N$ に射影する．
 ---
 
-さて，LMUでもあったようにこれらの演算子を使って係数 $c_n$ を計算することは簡単ではありません．
-
-なのでHiPPOでもLMUと同様に $c_n$ が常微分方程式 $\frac{d}{dt}\bm{c}(t)=\bm{A}(t)\bm{c}(t)+\bm{B}(t)f(t)$ の形を取ることを導いていきます．
-
-まずは近似多項式と測度を決めず，常微分方程式の一般形を紹介します．
+さて，LMUでもあったようにこれらの演算子を使って係数 $c_n$ を計算することは簡単ではありません．  
+なのでHiPPOでもLMUと同様に $c_n$ が常微分方程式 $\frac{d}{dt}\bm{c}(t)=\bm{A}(t)\bm{c}(t)+\bm{B}(t)f(t)$ の形を取ることを導いていきます．  
+結論は以下のようになります．
 
 ---
-$$
+$$\tag{10}
 \frac{d}{dt}c_n(t)=\zeta (t)^{-\frac{1}{2}}\lambda_n \left\{ \int f(x)\left( \frac{\partial}{\partial t}p_n(t,x) \right) \frac{\omega}{\chi}dx + \int f(x) p_n(t,x)  \left( \frac{\partial}{\partial t}\frac{\omega}{\chi}(t,x)\right) dx \right\}
 $$
 - $f(x)$ : 入力信号
@@ -428,11 +382,26 @@ $$
 - $\zeta(t)$ : スケーリングして得た直交多項式 $p_n(t,x)\chi(x)$ における測度に対する密度
 - $\lambda_n$ : スケーリング変数
 ---
-かなり複雑な式が出てきました．
 
-この式の各変数に具体的な数値を入れることで，いくつかの手法を定義することができます．
+$\frac{d}{dt} p^{(t)}_n$ は $x$ の $n$ 次の多項式であるため，$p_0, \ldots, p_n$ の線形結合として書けます．
 
-特に重要なのは $p_n(t,x)$ で，ここにルジャンドル多項式などの直交多項式を入れていきます．
+そのため第1項は
+$$
+\begin{align*}
+\zeta (t)^{-\frac{1}{2}}\lambda_n \int f(x)\left( \frac{\partial}{\partial t}p_n(t,x) \right) \frac{\omega}{\chi}dx
+&= \zeta (t)^{-\frac{1}{2}}\lambda_n \int f(x)\left( \sum_{i=0}^n d_i(t) p_i(t,x) \right) \frac{\omega}{\chi}dx \\
+&= \sum_{i=0}^n d_i(t) \zeta (t)^{-\frac{1}{2}}\lambda_n \int f(x) p_i(t,x) \frac{\omega}{\chi}dx \\
+&= \sum_{i=0}^n d_i(t) c_i(t)
+\end{align*}\tag{11}
+$$
+
+となり，$c_0, \ldots, c_n$ の線形結合になります．
+
+また，多くの重み関数 $\omega$ に対して，$\frac{\partial}{\partial t} \frac{\omega}{\chi}$ を $\frac{\omega}{\chi}$ 自身の式で表現できるようなスケーリング関数を見つけることができます． 
+（ディラック測度 $\delta$ を使って，$a \frac{\omega}{\chi} + b\delta$ みたいな感じになるらしい）  
+この場合，式 (10) の第2項では，$a \frac{\omega}{\chi}$ を用いた積分の部分は $c_0, \ldots, c_n$ の線形結合となり，$b\delta$ を用いた積分の部分は $f$ の線形結合になります．
+
+したがって，測度を上手く選べば $c(t)$ に対する閉じた形の線形 ODE $\frac{d}{dt}c_n(t) = -A(t)c(t) + B(t)f(t)$ が得られます．
 
 次に式の導出について証明していきます．
 証明はいいやという人は飛ばしてください．
@@ -441,47 +410,43 @@ $$
 <details>
 <summary> 証明 </summary>
 
-任意の時刻 $t$ で，近似の質は $(-\infty, t]$ 上でサポートされる測度 $\mu^{(t)}$ に関して定義されます．
-私たちは次数が最大で $N-1$ の多項式 $g(t)$ を求め，その誤差 $\|f|_{x \leq t} - g(t)\|_{L^2(\mu^{(t)})}$ を最小化します．
-簡単のために，測度 $\mu^{(t)}$ がその定義域および時間にわたって十分に滑らかであると仮定します．
-特に，これらの測度はルベーグ測度 $d\lambda(x) := dx$ に関して密度 $\omega(t, x) := \frac{d\mu^{(t)}}{d\lambda}(x)$ を持ち，$\omega$ はほぼ至る所で $C^1$ （1回微分可能で，1次導関数が連続）であるとします．
-したがって，$d\mu^{(t)}(x)$ に対する積分は，$\omega(t, x) dx$ に対する積分として書き直すことができます．
-また，簡単のために，測度 $\mu^{(t)}$ は確率測度と仮定します．
+任意の時刻 $t$ で $(-\infty, t]$ 上でサポートされる測度 $\mu^{(t)}$ が定義されます．  
+そして次数が最大で $N-1$ の多項式 $g(t)$ を求め，その誤差 $\|f|_{x \leq t} - g(t)\|_{L^2(\mu^{(t)})}$ を最小化します．  
+簡単のために，測度 $\mu^{(t)}$ は確率測度で，その定義域および時間にわたって十分に滑らかであると仮定します．  
+特に，これらの測度はルベーグ測度 $d\lambda(x) := dx$ に関して密度 $\omega(t, x) := \frac{d\mu^{(t)}}{d\lambda}(x)$ を持ち，$\omega$ はほぼ至る所で $C^1$ （1回微分可能で，1次導関数が連続）であるとします．  
+したがって，$d\mu^{(t)}(x)$ に対する積分は，$\omega(t, x) dx$ に対する積分として書き直すことができます．  
 
 >[!NOTE]
 >### 密度って何？
 ><details>
 ><summary> 詳細 </summary>
 >
->密度とは，測度の比のことです．
->2つの測度 $\mu$ ， $\nu$ があるとき，その密度 $\frac{d\nu}{d\mu}(x)$ は， $\nu$ が $\mu$ に対してどのように分布しているかを記述します．
+>密度とは，測度の比のことです．  
+>2つの測度 $\mu$ ， $\nu$ があるとき，その密度 $\frac{d\nu}{d\mu}(x)$ は， $\nu$ が $\mu$ に対してどのように分布しているかを表します．
 >
 >密度を使えば，新たな測度を定義することができます．
 >測度 $\mu$ と密度 $f(x)=\frac{d\nu}{d\mu}(x)$ が与えられているとき，
->$$
+>$$\tag{12}
 >\nu(A)=\int_A f(x)d\mu(x)
 >$$
->となるそうです．
->測度における重み付けとこの密度は同じことを言っているような気がしますね．
->そして最も基礎となる測度がルベーグ測度 $d\mu(x) = dx$ （＝一様な重み）ということなんですかね？
+>となります．
 
-正規直交多項式基底  
-$\{P_n\}_{n \in \mathbb{N}}$ を基準測度 $\mu$ に関しての正規直交多項式の列とします．
-同様に， $\{P_n^{(t)}\}_{n \in \mathbb{N}}$ を時間変化する測度 $\mu^{(t)}$ に関しての正規直交多項式の列と定義します．
-$P_n^{(t)}$ の正規化バージョンを $p_n^{(t)}$ （つまり，ノルムが1のもの）とし，次のように定義します．
+$\{P_n^{(t)}\}_{n \in \mathbb{N}}$ を時間変化する測度 $\mu^{(t)}$ に関しての直交多項式の列と定義します．  
+そして，$P_n^{(t)}$ を正規化したもの（ノルムが1のもの）を $p_n^{(t)}$ とし，次のように定義します．
 
-$$
+$$\tag{13}
 p_n(t, x) = p_n^{(t)}(x)
 $$
 
-$P_n^{(t)}$ は正規化されている必要はありませんが， $p_n^{(t)}$ は正規化されています．
+ここで，関数の圧縮表現を獲得するという目標のもとでは，必ずしも正規直交多項式使う必要はありません．  
+そのため，任意のスケーリング関数 $\chi(t, x)$ を導入します．
 
-傾斜測度と基底  
-私たちの目標は，関数の圧縮表現を格納することです．このため，必ずしも正規直交多項式（OP）である必要はなく，任意の基底を使用することができます．任意のスケーリング関数 $\chi(t, x)$ に対して，
+$$\tag{14}
+\chi(t, x) = \chi^{(t)}(x)
 $$
-\chi(t, x) = \chi^{(t)}(x),
-$$
-関数 $p_n(x) \chi(x)$ は各時刻 $t$ における密度 $\omega / \chi^2$ に関して直交します．したがって，この代替基底と測度を使用して射影を行うことができます．
+
+関数 $p_n(x) \chi^{(t)}(x)$ は，$\chi^{(t)}(x)$ が $x$ に依存するため，元の密度 $\omega$ での直交性が失われます．  
+しかし，新たな密度 $\omega / \chi^2$ を定義すれば，関数 $p_n(x) \chi^{(t)}(x)$ はこの密度に関して直交します．
 
 >[!NOTE]
 >### $p_n(x) \chi(x)$ が密度 $\omega / \chi^2$ に関して直交する理由
@@ -519,38 +484,38 @@ $$
 ><details>
 ><summary> 詳細 </summary>
 >
->- **「測度に関して直交性を持つ」**
+>**「測度に関して直交性を持つ」**
 >
->これは，特定の測度に基づいて定義された**内積**に関する直交性を表しています．
+>これは，特定の測度に基づいて定義された**内積**に関する直交性を表しています．  
 >具体的には，関数 $f(x)$ と $g(x)$ が測度 $\mu$ に関して直交であるとは，次の条件を満たすことを意味します：
 >$$
 >\int f(x) g(x) \, d\mu(x) = 0.
 >$$
->ここで，測度 $\mu$ は通常のルベーグ測度であることもあれば，他の一般的な測度であることもあります．
->例えば，重み付き内積や確率論における期待値計算でも測度を使います．
 >
->- **「密度に関して直交性を持つ」**
+>**「密度に関して直交性を持つ」**
 >
 >これは，「密度関数を用いて定義された新しい測度」に関しての直交性を指します．
 >仮に密度関数 $w(x)$ が測度 $\mu$ に対して定義されている場合，**密度 $w(x)$ に関して直交性を持つ**という表現は，次の条件を満たすことを意味します：
 >$$
 >\int f(x) g(x) \, w(x) \, d\mu(x) = 0.
 >$$
->ここで，$w(x) \, d\mu(x)$ は密度 $w(x)$ に基づく新しい測度 $d\nu(x) = w(x) \, d\mu(x)$ です．
+>ここで，$w(x) \, d\mu(x)$ は密度 $w(x)$ に基づく新しい測度 $d\nu(x) = w(x) \, d\mu(x)$ です．  
 >このような場合，関数 $f(x)$ と $g(x)$ は「新しい測度 $\nu$ に関して直交」であるとも言います．
 ></details>
 
 
-新たに得た密度 $\omega / \chi^2$ を用いて，新たな正規化された測度 $\nu^{(t)}$ を定義します．
+新たに得た密度 $\omega / \chi^2$ を用いて，新たな正規化された測度（＝確率測度） $\nu^{(t)}$ を定義します．  
 正規化定数として
-$$
+
+$$\tag{15}
 \zeta(t) = \int \frac{\omega}{\chi^2} = \int \frac{\omega^{(t)}(x)}{(\chi^{(t)}(x))^2} \, dx
 $$
-とすると $\nu^{(t)}$ は密度 $\frac{\omega^{(t)}(x)}{\zeta(t)(\chi^{(t)}(x))^2}$ を持ちます．
-もし $\chi(t, x) = 1$ （傾斜なし）であれば，この定数は $\zeta(t) = 1$ です．（ $\mu^{(t)}$ を確率測度としているため，積分したら1になる．）
+
+とすると $\nu^{(t)}$ は密度 $\frac{\omega^{(t)}(x)}{\zeta(t)(\chi^{(t)}(x))^2}$ を持ちます．  
+もし $\chi(t, x) = 1$ （傾斜なし）であれば，この定数は $\zeta(t) = 1$ です．（ $\mu^{(t)}$ を確率測度としているため）  
 一般に， $\zeta$ はすべての $t$ に対して定数であると仮定します．
 
-このとき以下が成り立ちます．（積分内の $x$ への依存性を省略しています）．
+このとき以下が成り立ちます（積分内の $x$ への依存性を省略しています）．
 $$
 \begin{align*}
 \left\| (\zeta(t)^{\frac{1}{2}} p_n^{(t)} \chi^{(t)}) \right\|_{\nu^{(t)}}^2 &= \int \left( (\zeta(t)^{\frac{1}{2}} p_n^{(t)} \chi^{(t)}) \right)^2 d\nu^{(t)} \\
@@ -559,12 +524,12 @@ $$
 &= \int (p_n^{(t)})^2 d\mu^{(t)} \\
 &= \| p_n^{(t)} \|_{\mu^{(t)}}^2 \\
 &= 1
-\end{align*}
+\end{align*}\tag{16}
 $$
 
 したがって， $\nu^{(t)}$ に対する直交基底を以下のように定義します．
 
-$$
+$$\tag{17}
 g_n^{(t)} = \lambda_n \zeta(t)^{\frac{1}{2}} p_n^{(t)} \chi^{(t)}, \quad n \in \mathbb{N}.
 $$
 
@@ -575,8 +540,9 @@ $$
 \langle g_n^{(t)}, g_m^{(t)} \rangle_{\nu^{(t)}}=\lambda_n^2 \delta_{n,m}
 $$
 
-入力信号 $f:[0,\infty)\rightarrow \mathbb{R}$ を $C^1$ であるとし，各時刻 $t$ までの信号 ${f(x)}_{\leq t}={f(x)}_{x\leq t}$ の圧縮表現を得ることを考えます．
+入力信号 $f:[0,\infty)\rightarrow \mathbb{R}$ を $C^1$ であるとし，各時刻 $t$ までの信号 ${f(x)}_{\leq t}={f(x)}_{x\leq t}$ の圧縮表現を得ることを考えます．  
 基底 $g_n^{(t)}$ を用いると，展開係数は次のように計算できます．
+
 $$
 \begin{align*}
 c_n(t) &= \langle {f(x)}_{\leq t},g_n^{(t)} \rangle_{\nu^{(t)}} \\
@@ -584,102 +550,93 @@ c_n(t) &= \langle {f(x)}_{\leq t},g_n^{(t)} \rangle_{\nu^{(t)}} \\
 &= \int fg_n^{(t)} \frac{\omega^{(t)}}{\zeta(t) (\chi^{(t)})^2} \\
 &= \int f \lambda_n \zeta(t)^{\frac{1}{2}} p_n^{(t)} \chi^{(t)} \frac{\omega^{(t)}}{\zeta(t) (\chi^{(t)})^2} \\
 &= \zeta(t)^{-\frac{1}{2}} \lambda_n \int f p_n^{(t)} \frac{\omega^{(t)}}{\chi^{(t)}}
-\end{align*}
+\end{align*}\tag{18}
 $$
+
 また， ${f(x)}_{\leq t}$ の近似式は以下のように計算できます．
+
 $$
 \begin{align*}
 f_{\leq t} \approx g^{(t)} :=& \sum_{n=0}^{N-1} \langle f_{\leq t},g_n^{(t)} \rangle_{\nu^{(t)}} \frac{g_n^{(t)}}{\|g_n^{(t)}\|_{\nu^{(t)}}^2} \\
 =& \sum_{n=0}^{N-1} c_n(t)\lambda_n^{-2}g_n^{(t)} \\
 =& \sum_{n=0}^{N-1} \lambda_n^{-1} \zeta(t)^{\frac{1}{2}} c_n(t)p_n^{(t)} \chi^{(t)}
-\end{align*}
+\end{align*}\tag{19}
 $$
-この式こそが $\text{proj}_t$ です．
-また， $\text{coef}_t$ は，係数ベクトル $c(t)=(c_n(t))_{n\in[N]}$ を抽出する操作です．
 
-さらに係数 $c_n^{(t)}$ をオンラインで計算するため，時間微分します．
+この式 (19) こそが $\text{proj}_t$ です．
+また， $\text{coef}_t$ は，係数ベクトル $c(t)=(c_n(t))_{n\in[N]}$ を抽出する操作で式 (18)です．
+
+さらに係数 $c_n^{(t)}$ をオンラインで計算するため，式 (18) を時間微分します．
 $$
 \begin{align*}
 \frac{d}{dt}c_n(t) &= \frac{d}{dt}\zeta(t)^{-\frac{1}{2}} \lambda_n \int f p_n^{(t)} \frac{\omega^{(t)}}{\chi^{(t)}} \\
-&= \zeta (t)^{-\frac{1}{2}}\lambda_n \int f(x)\left( \frac{\partial}{\partial t}p_n(t,x) \right) \frac{\omega}{\chi}dx + \zeta (t)^{-\frac{1}{2}}\lambda_n \int f(x) p_n(t,x)  \left( \frac{\partial}{\partial t}\frac{\omega}{\chi}(t,x)\right) dx
+&= \zeta (t)^{-\frac{1}{2}}\lambda_n \left\{ \int f(x)\left( \frac{\partial}{\partial t}p_n(t,x) \right) \frac{\omega}{\chi}dx + \int f(x) p_n(t,x)  \left( \frac{\partial}{\partial t}\frac{\omega}{\chi}(t,x)\right) dx \right\}
 \end{align*}
 $$
 ここで， $\zeta$ は時間に対して定数であると仮定してます．
+これで式 (10) を導出できました．
 
 </details>
 
 ---
 
-重要なアイデアは，もし $\frac{\partial}{\partial t} P_n$ と $\frac{\partial}{\partial t} \frac{\omega}{\chi}$ が多項式 $P_k$ に関連する閉じた形で表現できるならば，係数 $c(t)$ に対する常微分方程式 (ODE) を記述できるということです．
+あとは，この式の各変数に具体的な数値を入れることで，いくつかの手法を定義することができます．  
+特に重要なのは $p_n(t,x)$ で，ここにルジャンドル多項式などの直交多項式を入れていきます．
 
-これにより，これらの係数 $c(t)$ および最適な多項式近似をオンラインで計算することが可能になります．
+## 5.3. HiPPOの具体化
+さて，いよいよ具体的な基底・直交多項式を使って，いろいろな手法を求めていきます．
 
-特に，$\frac{d}{dt} p^{(t)}_n$ は $x$ の $n$ 次の多項式であるため，$p_0, \ldots, p_n$ の線形結合として書けます．
-
-そのため第1項は
-$$
-\begin{align*}
-\zeta (t)^{-\frac{1}{2}}\lambda_n \int f(x)\left( \frac{\partial}{\partial t}p_n(t,x) \right) \frac{\omega}{\chi}dx
-&= \zeta (t)^{-\frac{1}{2}}\lambda_n \int f(x)\left( \sum_{i=0}^n d_i(t) p_i(t,x) \right) \frac{\omega}{\chi}dx \\
-&= \sum_{i=0}^n d_i(t) \zeta (t)^{-\frac{1}{2}}\lambda_n \int f(x) p_i(t,x) \frac{\omega}{\chi}dx \\
-&= \sum_{i=0}^n d_i(t) c_i(t)
-\end{align*}
-$$
-
-となり，$c_0, \ldots, c_n$ の線形結合になります．
-
-また，多くの重み関数 $\omega$ に対して，$\frac{\partial}{\partial t} \frac{\omega}{\chi}$ を $\frac{\omega}{\chi}$ 自身の式で表現できるようなスケーリング関数を見つけることができます．
-
-この場合，式 (20) の第二項も $c_0, \ldots, c_n$ の線形結合となります．
-
-したがって，これによりしばしば $c(t)$ に対する閉じた形の線形 ODE $\frac{d}{dt}c_n(t) = -A(t)c(t) + B(t)f(t)$ が得られます．
-
-## HiPPOの具体化
-さて，いよいよ具体的な基底を定め，これまで求めた式から手法を求めていきます．
-
-### HiPPO-LegT (Translated Legendre)
-この手法では，基底としてルジャンドル多項式を用います．
+### 5.3.1. HiPPO-LegT (Translated Legendre)
+この手法では，基底としてルジャンドル多項式を用います．  
 ルジャンドル多項式は，ルベーグ測度に対して直交性を持つため，測度はルベーグ測度となります．
-また， $\chi=1,\zeta=1$ とします．
-なお，ルジャンドル多項式は区間 $[-1,1]$ を定義域としているため，区間 $[t-\theta, t]$ を定義域とするように変形します．
-以上より
+また， $\chi=1,\zeta=1$ とします．  
+なお，ルジャンドル多項式は区間 $[-1,1]$ を定義域としているため，区間 $[t-\theta, t]$ を定義域とするように変形します．  
+これは，ウィンドウサイズ $\theta$ のスライディングウィンドウを考えることに相当します．
+
 $$
 \begin{align*}
 \omega(t, x) &= \frac{1}{\theta} \mathbb{I}_{[t-\theta, t]} \\
 p_n(t, x) &= (2n + 1)^{\frac{1}{2}} P_n\left( \frac{2(x - t)}{\theta} + 1 \right) \\
 g_n(t, x) &= \lambda_n p_n(t, x)
-\end{align*}
+\end{align*}\tag{20}
 $$
-$P_n\left( \frac{2(x - t)}{\theta} + 1 \right)$ は区間 $[t-\theta, t]$ を定義域とするルジャンドル多項式， $p_n(t, x)$ は正規化したものです．
+
+$P_n\left( \frac{2(x - t)}{\theta} + 1 \right)$ は区間 $[t-\theta, t]$ を定義域とするルジャンドル多項式， $p_n(t, x)$ はそれを正規化したものです．  
 なお，区間の端では以下が成り立ちます．
+
 $$
 \begin{align*}
 g_n(t,t) &= \lambda_n(2n+1)^{\frac{1}{2}} \\
 g_n(t,t-\theta) &= \lambda_n(-1)^n(2n+1)^{\frac{1}{2}}
-\end{align*}
+\end{align*}\tag{21}
 $$
-また，
+
+また，時間微分について以下が成り立ちます．
+詳細はルジャンドル多項式の微分の性質を調べてみてください．
+
 $$
 \begin{align*}
 \frac{\partial}{\partial t}\omega(t,x) &= \frac{1}{\theta}\delta_t - \frac{1}{\theta}\delta_{t-\theta} \\
 \frac{\partial}{\partial t} g_n(t, x) &= \lambda_n (2n + 1)^{\frac{1}{2}} \cdot \frac{-2}{\theta} P_n'\left( \frac{2(x - t)}{\theta} + 1 \right) \\
 &= \lambda_n (2n + 1)^{\frac{1}{2}} \frac{-2}{\theta} \left[ (2n - 1) P_{n-1}\left( \frac{2(x - t)}{\theta} + 1 \right) + (2n - 5) P_{n-3}\left( \frac{2(x - t)}{\theta} + 1 \right) + \ldots \right] \\
 &= -\lambda_n (2n + 1)^{\frac{1}{2}} \frac{2}{\theta} \left[ \lambda_{n-1}^{-1} (2n - 1)^{\frac{1}{2}} g_{n-1}(t, x) + \lambda_{n-3}^{-1} (2n - 5)^{\frac{1}{2}} g_{n-3}(t, x) + \ldots \right]
-\end{align*}
+\end{align*}\tag{22}
 $$
 
-さらに $c_n$ の更新式を計算する過程で $f(t-\theta)$ が必要になるのですが，オンライン問題であるため時刻 $t$ において $f(t-\theta)$ は保持していません．
+さらに $c_n$ の更新式を計算する過程で $f(t-\theta)$ が必要になりますが，オンライン問題であるため $f(t-\theta)$ は保持していません．  
 そこで， $f(t-\theta)$ を近似した式を用います．
-$\text{proj}_t$および$p_n(t,x)$より
+式 (19) で表される $\text{proj}_t$ および $p_n(t,x)$ より
+
 $$
 \begin{align*}
 f_{\leq t}(x) &\approx \sum_{k=0}^{N-1} \lambda_k^{-1}c_k(t)(2k+1)^{\frac{1}{2}}P_k\left( \frac{2(x - t)}{\theta} + 1 \right) \\
 f(t-\theta) &\approx \sum_{k=0}^{N-1} \lambda_k^{-1}c_k(t)(2k+1)^{\frac{1}{2}}(-1)^k
-\end{align*}
+\end{align*}\tag{23}
 $$
 
-これを $c_n$ の更新式に代入すると以下の式を得ます．
-$$
+これを $c_n$ の更新式 (10) に代入すると以下の式を得ます．
+
+$$\tag{24}
 \frac{d}{dt}c_n(t) = - \frac{\lambda_n}{\theta}(2n+1)^{\frac{1}{2}} \sum_{k=0}^{N-1} M_{nk}(2k+1)^{\frac{1}{2}}\frac{c_k(t)}{\lambda_k} + \frac{\lambda_n}{\theta}(2n+1)^{\frac{1}{2}}f(t)
 $$
 where
@@ -690,6 +647,8 @@ M_{nk}=
 (-1)^{n-k} & \text{if}\quad k\geq n
 \end{cases}
 $$
+
+---
 
 <details>
 <summary> 式変形の詳細 </summary>
@@ -727,11 +686,11 @@ $$
 ><details>
 ><summary> 詳細 </summary>
 >
->最後の式変形で何が起きたのかを解説します．
->最後の項は変わっていないため，1項目と2項目で計算しています．
+>最後の式変形で何が起きたのかを解説します．  
+>最後の項は変わっていないため，1項目と2項目で計算しています．  
 >さらに $-\frac{\lambda_n}{\theta} (2n + 1)^{\frac{1}{2}}$ の部分は一致しているため，
 >$$
->2 \left[ (2n - 1)^{\frac{1}{2}} \frac{c_{n-1}(t)}{\lambda_{n-1}} + (2n - 5)^{\frac{1}{2}} \frac{c_{n-3}(t)}{\lambda_{n-3}} + \ldots \right] + \sum_{k=0}^{N-1} (-1)^{n-k}(2k+1)^{\frac{1}{2}}\frac{c_k(t)}{\lambda_k} \\
+>2 \left[ (2n - 1)^{\frac{1}{2}} \frac{c_{n-1}(t)}{\lambda_{n-1}} + (2n - 5)^{\frac{1}{2}} \frac{c_{n-3}(t)}{\lambda_{n-3}} + \ldots \right] + \sum_{k=0}^{N-1} (-1)^{n-k}(2k+1)^{\frac{1}{2}}\frac{c_k(t)}{\lambda_k}
 >= \sum_{k=0}^{N-1} M_{nk}(2k+1)^{\frac{1}{2}}\frac{c_k(t)}{\lambda_k}
 >$$
 >となっています．
@@ -743,16 +702,20 @@ $$
 >|1項目の係数|   | $2$| $0$ | $2$ | $0$ | $0$ | $0$ | $0$ |  | $0$
 >|2項目の係数|   | $-1$| $1$ |$-1$| $1$|$-1$| $1$|$-1$|  | $(-1)^{n-(N-1)}$
 >
->表を見ると一目瞭然かもしれません．
->1項目は $k=n-1$ まで1つ飛ばしで係数2を持っていて，2項目は$1,-1$を交互に繰り返します．
->この和をとると， $k=n-1$ までは係数が全て1になり， $k=n$ 以降は $(-1)^{n-k}$が係数になります．
+>表を見ると一目瞭然かもしれません．  
+>1項目は $k=n-1$ まで1つ飛ばしで係数2を持っていて，2項目は$1,-1$を交互に繰り返します．  
+>この和をとると， $k=n-1$ までは係数が全て1になり， $k=n$ 以降は $(-1)^{n-k}$が係数になります．  
 >これを表現しているのが $M_{nk}$ ということです．
 ></details>
 
 </details>
 
+---
+
 ここで， $\lambda_n$ の値について考えます．
-もし， $\lambda_n=1$ とした（基底を正規直交基底と考える）場合，上式は次のような線形常微分方程式に変形できます．
+
+もし， $\lambda_n=1$ とした（基底を正規直交基底と考える）場合，式 (24) は次のような線形常微分方程式に変形できます．
+
 $$
 \begin{align*}
 \frac{d}{dt}c(t) &= -\frac{1}{\theta}Ac(t)+\frac{1}{\theta}Bf(t) \\
@@ -762,9 +725,11 @@ A_{nk} &= (2n + 1)^{\frac{1}{2}}(2k + 1)^{\frac{1}{2}}
 (-1)^{n-k} & \text{if}\quad k\geq n
 \end{cases} \\
 B_n &= (2n + 1)^{\frac{1}{2}}
-\end{align*}
+\end{align*}\tag{25}
 $$
+
 もし， $\lambda_n=(2n + 1)^{\frac{1}{2}}(-1)^n$ とした場合，次のような線形常微分方程式に変形できます．
+
 $$
 \begin{align*}
 \frac{d}{dt}c(t) &= -\frac{1}{\theta}Ac(t)+\frac{1}{\theta}Bf(t) \\
@@ -774,16 +739,21 @@ A_{nk} &= (2n + 1)
 (-1)^{n-k} & \text{if}\quad k\geq n
 \end{cases} \\
 B_n &= (2n + 1)(-1)^n
-\end{align*}
+\end{align*}\tag{26}
 $$
-さて，気付きましたでしょうか？
-実はこの式は，LMUの式になっています．
-このことから，従来手法LMUがHiPPO-LegTの特殊化であることが導けました．
 
-### HiPPO-LagT (Translated Laguerre)
-次に基底として，直交多項式の1つであるラゲール多項式を選んでみましょう．
+さて，気付きましたでしょうか？
+
+実は式 (26) は，LMUの式 (6) になっています．
+このことから，LMUがHiPPO-LegTの特殊化であることが導けました．
+
+### 5.3.2. HiPPO-LagT (Translated Laguerre)
+ここでは基底として，直交多項式の1つであるラゲール多項式を選んでみます．
 
 ラゲール多項式について軽く紹介します．
+
+---
+
 - 定義
 $$
 L_n(x) = e^x \frac{d^n}{dx^n} \left( x^n e^{-x} \right)
@@ -803,11 +773,14 @@ $$
 \int_{0}^{\infty} L_m^{(\alpha)}(x) L_n^{(\alpha)}(x) x^{\alpha} e^{-x} \, dx = \frac{(\alpha + n)!}{n!} \delta_{mn}
 $$
 
-一般化ラゲール多項式において $\alpha=0$ がラゲール多項式ということです．
+一般化ラゲール多項式において $\alpha=0$ がラゲール多項式です．
 
-ここでは一般化ラゲール多項式を基底として採用します．
-一般化ラゲール多項式は，区間 $[0,\infty)$ を定義域としているため，区間 $(-\infty,t]$ を定義域とするように変形します．
+---
+
+ここでは一般化ラゲール多項式を基底として採用します．  
+一般化ラゲール多項式は，区間 $[0,\infty)$ を定義域としているため，区間 $(-\infty,t]$ を定義域とするように変形します．  
 まとめると以下の通りです．
+
 $$
 \begin{align*}
 \omega(t, x) &= 
@@ -817,43 +790,51 @@ $$
 \end{cases} \\
 &= (t - x)^{\alpha} e^{-(t - x)} \mathbb{I}_{(-\infty, t]} \\
 p_n(t, x) &= \frac{\Gamma(n + 1)^{\frac{1}{2}}}{\Gamma(n + \alpha + 1)^{\frac{1}{2}}} L_n^{(\alpha)}(t - x)
-\end{align*}
+\end{align*}\tag{27}
 $$
-スケーリング $\chi$ は以下のように定義します． $\beta \in \mathbb{R}$ は定数です．
-$$
+
+スケーリング $\chi$ は以下のように定義します．
+$\beta \in \mathbb{R}$ は定数です．
+
+$$\tag{28}
 \chi(t, x) = (t - x)^{\alpha} \exp \left( -\frac{1 - \beta}{2}(t - x) \right) \mathbb{I}_{(-\infty, t]}
 $$
+
 このとき，正規化項は
+
 $$
 \begin{align*}
 \zeta &= \int \frac{\omega}{\chi^2} = \int (t - x)^{-\alpha} e^{-\beta(t - x)} \mathbb{I}_{(-\infty, t]} dx \\
 &= \Gamma(1 - \alpha) \beta^{\alpha - 1}
-\end{align*}
+\end{align*}\tag{29}
 $$
+
 となり，スケーリングされた測度は次の密度を持ちます．
-$$
+
+$$\tag{30}
 \zeta(t)^{-1} \frac{\omega^{(t)}}{(\chi^{(t)})^2} = \Gamma(1 - \alpha)^{-1} \beta^{1 - \alpha} (t - x)^{-\alpha} \exp(-\beta(t - x)) \mathbf{1}_{(-\infty, t]}.
 $$
 
 また， $\lambda_n$ を一般化ラゲール多項式のノルムに設定することで， $\lambda_n p_n^{(t)} = L_n^{(\alpha)}(t - x)$ という関係が成り立ちます．
-$$
+
+$$\tag{31}
 \lambda_n = \frac{\Gamma(n + \alpha + 1)^{\frac{1}{2}}}{\Gamma(n + 1)^{\frac{1}{2}}}
 $$
 
 このとき，
-$$
+$$\tag{32}
 g_n^{(t)} = \lambda_n \zeta^{\frac{1}{2}} \chi^{(t)} p_n^{(t)} = \zeta^{\frac{1}{2}} \chi^{(t)} L_n^{(\alpha)}(t - x)
 $$
 
 最後に $c_n$ の更新式に必要な2つの微分項を計算していきます．
 
-$$
+$$\tag{33}
 \frac{\omega}{\chi}(t, x) = \exp \left( \frac{1 + \beta}{2} (t - x) \right) \mathbf{1}_{(-\infty, t]}.
 $$
 
 より，
 
-$$
+$$\tag{34}
 \frac{\partial}{\partial t} \frac{\omega}{\chi}(t, x) = - \left( \frac{1 + \beta}{2} \right) \frac{\omega}{\chi}(t, x) +\exp \left( - \left( \frac{1 + \beta}{2} \right) (t - x) \right) \delta_t
 $$
 
@@ -865,7 +846,7 @@ $$
 &= -L_0^{(\alpha)}(t - x) - \cdots - L_{n-1}^{(\alpha)}(t - x) \\
 &= -\lambda_0 p_0(t, x) - \cdots - \lambda_{n-1} p_{n-1}(t, x) \\
 &= -\sum_{k=0}^{n-1} \lambda_kp_k(t,x)
-\end{align*}
+\end{align*}\tag{35}
 $$
 
 さて，ようやく準備が整いました．
@@ -886,8 +867,10 @@ B &= \zeta^{-\frac{1}{2}} \cdot
 \vdots \\
 \binom{N-1+\alpha}{N-1}
 \end{bmatrix}
-\end{align*}
+\end{align*}\tag{36}
 $$
+
+---
 
 <details>
 <summary> 式変形の詳細 </summary>
@@ -924,9 +907,11 @@ B &= \zeta^{-\frac{1}{2}} \cdot
 $$
 </details>
 
+---
+
 HiPPO-LegTと同様に線形常微分方程式が得られました．
 論文中では， $\alpha=0, \beta=1$ として
-$$
+$$\tag{37}
 A_{nk}=
 \begin{cases}
 1 & \text{if} \quad n\geq k \\
@@ -937,23 +922,26 @@ B_n=1
 $$
 という行列をHiPPO-LagTとして提案しています．
 
-### HiPPO-LegS (Scaled Legendre)
+### 5.3.3. HiPPO-LegS (Scaled Legendre)
 さて，最後にもう一つだけ紹介します．
 もったいぶってしまいましたが，この手法がメインとなります．
-名前の通り，この手法でもルジャンドル多項式を基底として採用しますが，HiPPO-LegTとは考え方に違いがあります．
-HiPPO-LegTでは，区間 $[t-\theta,t]$ を定義域としていました．
-これは $\theta$ をウィンドウサイズとして，スライディングさせていると考えることができます．
-一方で，区間 $[0,t]$ を定義域とした場合，これは $t=0$ から現在までの情報をすべて見るということになります．ウィンドウサイズが可変であると解釈しても良いかもしれません．
+
+名前の通り，この手法でもルジャンドル多項式を基底として採用しますが，HiPPO-LegTとは考え方に違いがあります．  
+HiPPO-LegTでは，区間 $[t-\theta,t]$ を定義域としていました．  
+これは $\theta$ をウィンドウサイズとして，スライディングさせていると考えることができます．  
+
+一方で，HiPPO-LegS では，区間 $[0,t]$ を定義域とします．  
+これは $t=0$ から現在までの情報をすべて見るということになります．
+ウィンドウサイズが可変であると解釈しても良いかもしれません．
 
 これまでの手法と比較すると次の図のようになります．
-<section style="text-align: center;">
 
-![ルジャンドル多項式](images/hippo/diff_method.png)
+<center><img src="images/hippo/diff_method.png" width="100%"></center>
 
-</section>
-
-HiPPO-LegTはウィンドウの外の信号は忘れてしまいますが，HiPPO-LegSでは忘れることはありません．
-単純ですが，そのように考えるとこちらの方が上手くいきそうな予感があります．
+HiPPO-LegTはウィンドウの外の信号は忘れてしまいますが，HiPPO-LegSでは忘れることはありません．  
+単純ですが，そのように考えるとこちらの方が上手くいきそうな予感があります．  
+ちなみに，ラゲール多項式は直近のデータを重要視するものになります．
+これもなんだか良さそうに感じます．
 
 それではこれまでと同様にして，サクッと導出していきます．
 
@@ -961,7 +949,7 @@ $$
 \begin{align*}
 \omega(t, x) &= \frac{1}{t} \mathbb{I}_{[0, t]} \\
 g_n(t, x) &= p_n(t, x) = (2n + 1)^{\frac{1}{2}} P_n\left( \frac{2x}{t} + 1 \right)
-\end{align*}
+\end{align*}\tag{38}
 $$
 
 ここで， $\chi(t,x)=1, \zeta(t)=1, \lambda_n=1$ としています．
@@ -972,7 +960,7 @@ $$
 \frac{\partial}{\partial t} \omega(t, \cdot) &= -t^{-2} \mathbb{I}_{[0,t]} + t^{-1}\delta_t = t^{-1}(-\omega(t) + \delta_t) \\
 \frac{\partial}{\partial t} g_n(t, x) &= - (2n+1)^{\frac{1}{2}} 2xt^{-2} P'_n \left( \frac{2x}{t} - 1 \right) \\
 &= - (2n+1)^{\frac{1}{2}} t^{-1} \left( \frac{2x}{t} - 1 + 1 \right) P'_n \left( \frac{2x}{t} - 1 \right)
-\end{align*}
+\end{align*}\tag{39}
 $$
 
 ここで， $z = \frac{2x}{t} - 1$ と置くと，
@@ -982,7 +970,7 @@ $$
 \frac{\partial}{\partial t} g_n(t, x) &= - (2n+1)^{\frac{1}{2}} t^{-1} (z+1) P'_n(z) \\
 &= - (2n+1)^{\frac{1}{2}} t^{-1} \left[ nP_n(z) + (2n-1) P_{n-1}(z) + (2n-3) P_{n-2}(z) + \ldots \right] \\
 &= - t^{-1} (2n+1)^{\frac{1}{2}} \left[ n (2n+1)^{-\frac{1}{2}} g_n(t, x) + (2n-1)^{\frac{1}{2}} g_{n-1}(t, x) + (2n-3)^{\frac{1}{2}} g_{n-2}(t, x) + \ldots \right]
-\end{align*}
+\end{align*}\tag{40}
 $$
 
 これを $c_n$ の更新式に代入すれば次を得ます．
@@ -996,8 +984,10 @@ n+1 & \text{if}\quad n=k \\
 0 & \text{if}\quad n<k
 \end{cases} \\
 B_n &= (2n + 1)^{\frac{1}{2}}
-\end{align*}
+\end{align*}\tag{41}
 $$
+
+---
 
 <details>
 <summary> 式変形の詳細 </summary>
@@ -1027,22 +1017,28 @@ $$
 
 </details>
 
-このあと確かめますが，実はこの手法が最も良い精度を示します．
-そのため，これ以降の論文では，この手法における $A_{nk}$ をHiPPO Matrixと呼んでいます．
+---
 
-## 離散化
-これまで線形常微分方程式を導いてきましたが，実用上，離散化する必要があります．
+このあと確かめますが，実はこの手法が最も良い精度を示します．  
+そのため，これ以降の論文ではこの $A_{nk}$ をHiPPO Matrixと呼んでいます．
+
+## 5.4. 離散化
+これまで線形常微分方程式を導いてきましたが，実用上，離散化する必要があります．  
 そのため，いくつか離散化の手法を紹介します．
 ここでは，以下の式を離散化します．
+
 $$
 \frac{d}{dt}c(t)=Ac(t)+Bf(t)
 $$
+
 このとき，ステップサイズを $\Delta t$ とすると
+
 $$
 c(t+\Delta t) - c(t) = \int_{t}^{t+\Delta t} (Ac(s)+Bf(s))ds
 $$
 となります．
-この右辺の積分をどのように近似するかで手法が分かれます．
+
+この右辺の積分をどのように近似するかで手法が分かれます．  
 近似手法については難しく考える必要はなく，幅 $\Delta t$ の長方形の面積を求めると考えてくれれば問題ないです．
 
 <details>
@@ -1079,7 +1075,7 @@ $$
 <details>
 <summary>Generalized Bilinear Transformation (GBT) </summary>
 
-この手法は，長方形の高さを $s=t$ のときと $s=t+\Delta t$ のときを $\alpha : 1-\alpha$ で内分したものにする手法です．
+この手法は，長方形の高さを $s=t$ のときと $s=t+\Delta t$ のときを $\alpha : 1-\alpha$ で内分したものにする手法です．  
 この手法は前の3つを含んだ一般化になり，$\alpha =0$ がforward Euler， $\alpha =1$ がbackward Euler， $\alpha =\frac{1}{2}$ がBilinearに対応します．
 $$
 \begin{align*}
@@ -1090,24 +1086,29 @@ $$
 
 実際に$\alpha=\frac{1}{2}$のGBT（=Bilinear）を用いて離散化してみます．  
 ここではゼロ次ホールド $f(t+\Delta t)=f(t)$ を仮定します．
+
 $$
 \begin{align*}
 c(t+\Delta t) - c(t) &= \frac{1}{2}\Delta t (Ac(t)+Bf(t)) + \frac{1}{2} \Delta t (Ac(t+\Delta t)+Bf(t+\Delta t)) \\
 (I-\frac{1}{2} \Delta t A)c(t+\Delta t) &= (I+\frac{1}{2} \Delta t A)c(t) + \Delta tBf(t+\Delta t) \\
 c(t+\Delta t) &= (I-\frac{1}{2} \Delta t A)^{-1}(I+\frac{1}{2} \Delta t A)c(t) + (I-\frac{1}{2} \Delta t A)^{-1}\Delta tBf(t+\Delta t) \\
 c_{t} &= \bar{A}c_{t-1} + \bar{B}f_{t}
-\end{align*}
+\end{align*}\tag{42}
 $$
+
 ただし，
+
 $$
-\bar{A} = (I-\frac{1}{2} \Delta t A)^{-1}(I+\frac{1}{2} \Delta t A) \\
-\bar{B} = (I-\frac{1}{2} \Delta t A)^{-1}\Delta tB
+\begin{align*}
+\bar{A} &= (I-\frac{1}{2} \Delta t A)^{-1}(I+\frac{1}{2} \Delta t A) \\
+\bar{B} &= (I-\frac{1}{2} \Delta t A)^{-1}\Delta tB
+\end{align*}\tag{43}
 $$
 
 
-## HiPPO-LegSの性質
-さて，なぜHiPPO-LegSが最も良い精度を示すのでしょうか？
-もちろんスライディングウィンドウではなく，すべての履歴を考慮するからというのもありますが，実はHiPPO-LegSにはいくつかの好ましい性質があります．
+## 5.5. HiPPO-LegSの性質
+さて，なぜHiPPO-LegSが最も良い精度を示すのでしょうか？  
+もちろんすべての履歴を考慮するからというのもありますが，実はHiPPO-LegSにはいくつかの好ましい性質があります．  
 それは次の通りです．
 
 1. 時間ステップに非依存
@@ -1119,6 +1120,7 @@ $$
 
 HiPPO-LegSを離散化してみます．
 離散化にはGBT ($\alpha=\frac{1}{2}$)，つまりbilinearを適用します．
+
 $$
 \begin{align*}
 \frac{d}{dt}c(t) &= -\frac{1}{t}Ac(t)+\frac{1}{t}Bf(t) \\
@@ -1126,7 +1128,9 @@ c(t+\Delta t) - c(t) &= \int_{t}^{t+\Delta t} \left(-\frac{1}{s}Ac(s)+\frac{1}{s
 &\approx \frac{\Delta t}{2} \left(-\frac{1}{t}Ac(t)+\frac{1}{t}Bf(t)\right) + \frac{\Delta t}{2} \left(-\frac{1}{t+\Delta t}Ac(t+\Delta t)+\frac{1}{t+\Delta t}Bf(t+\Delta t)\right)
 \end{align*}
 $$
+
 ここでゼロ次ホールド $f(t+\Delta t)=f(t)$ を仮定すると，
+
 $$
 \begin{align*}
 c(t+\Delta t) - c(t) &= \frac{\Delta t}{2} \left(-\frac{1}{t}Ac(t)+\frac{1}{t}Bf(t)\right) + \frac{\Delta t}{2} \left(-\frac{1}{t+\Delta t}Ac(t+\Delta t)+\frac{1}{t+\Delta t}Bf(t)\right) \\
@@ -1134,88 +1138,70 @@ c(t+\Delta t) + \frac{\Delta t}{2(t+\Delta t)}Ac(t+\Delta t) &= \left( I-\frac{\
 \left(I + \frac{\Delta t}{2(t+\Delta t)}A\right)c(t+\Delta t) &= \left( I-\frac{\Delta t}{2t}A \right)c(t) + \left( \frac{\Delta t}{2t}+\frac{\Delta t}{2(t+\Delta t)} \right)Bf(t) \\
 \end{align*}
 $$
+
 ここで時間を離散化し， $t=k\Delta t$ とおいて， $c_k:=c(k\Delta t)$ ， $f_k:=f(k\Delta t)$ としてみると
+
 $$
 \begin{align*}
 \left(I + \frac{\Delta t}{2(k\Delta t+\Delta t)}A\right)c(k\Delta t+\Delta t) &= \left( I-\frac{\Delta t}{2k\Delta t}A \right)c(k\Delta t) + \left( \frac{\Delta t}{2k\Delta t}+\frac{\Delta t}{2(k\Delta t+\Delta t)} \right)Bf(k\Delta t) \\
 \left(I + \frac{1}{2(k+1)}A\right)c_{k+1} &= \left( I-\frac{1}{2k}A \right)c_k + \left( \frac{1}{2k}+\frac{1}{2(k+1)} \right)Bf_k \\
 \end{align*}
 $$
-$\Delta t$ がすべて消えました．
-このことから，HiPPO-LegSは時間ステップに非依存となります．
-この性質は，HiPPO-LegS特有のもののようで，他の手法には見られないそうです．
 
-## 実験
+$\Delta t$ がすべて消えました．
+このことから，HiPPO-LegSは時間ステップに非依存となります．  
+この性質はHiPPO-LegS特有のもののようで，他の手法には見られないそうです．
+
+## 5.6. 実験
 最後に実験結果を示して，HiPPOの解説を終わりにしようと思います．
 実験では，HiPPOを次のようにしてRNNに組み込みました．
 
-<section style="text-align: center;">
+<center><img src="images/hippo/arch.png" width="70%"></center>
 
-![](images/hippo/arch.png)
-
-</section>
-
-見ての通り簡単に組み込めます．
+HiPPOは記憶の更新に関する手法なので，RNNの記憶セルの更新部に組み込めます．  
 これを用いて，2つのベンチマークテストを行っています．
 
-1つ目は，p-MNISTです．
-このデータセットでは，とある順序に従ってMNISTのピクセルをシャッフルしたデータセットのようです．
+1つ目は，p-MNISTです．  
+このデータセットでは，とある順序に従ってMNISTのピクセルをシャッフルしたデータセットです．  
 空間的特徴が失われていますので，2次元の畳み込みが通用しません．  
 結果は以下の通り，HiPPO-LegSが最も精度が高いです．
 その他の手法もなかなかいい精度してますね．
 
-<section style="text-align: center;">
+<center><img src="images/hippo/res_pmnist.png" width="50%"></center>
 
-![](images/hippo/res_pmnist.png)
-
-</section>
-
-2つ目は，Character Trajectory classificationです．
-これは，文字を書くときの2次元座標情報から文字を分類するタスクになります．（多分）
+2つ目は，Character Trajectory classificationです．  
+これは，文字を書くときの2次元座標情報から文字を分類するタスクになります．  
 このタスクでは，あえてサンプリングレートを変えることで，時間スケールへの頑健さをアピールしています．
 
-<section style="text-align: center;">
+<center><img src="images/hippo/res_char.png" width="90%"></center>
 
-![](images/hippo/res_char.png)
+最後に処理速度と入力信号の近似精度の話です．  
+HiPPO-LegSは処理速度が速く，LSTMに比べて入力信号の近似精度がダントツです．
 
-</section>
-
-おまけです．
-
-処理速度と入力信号の近似精度の話．
-
-<section style="text-align: center;">
-
-![](images/hippo/res_other.png)
-
-</section>
+<center><img src="images/hippo/res_other.png" width="90%"></center>
 
 
-# LSSL (Linear State-Space Layers)
-HiPPOは記憶に関する手法でした．
+# 6. LSSL (Linear State-Space Layers)
+HiPPOは記憶に関する手法でした．  
 HiPPOを用いることで長期的な記憶が可能になり，RNNの記憶セル部分にHiPPOを導入するだけで精度が改善しました．
 
-LSSLはHiPPOを状態空間モデルの形に拡張し，記憶と出力の関係性をモデリングしたものになります．
+LSSLはHiPPOを状態空間モデルの形に拡張し，記憶と出力の関係性も含めてモデリングしたものです．  
 状態空間モデルの形に拡張することで，RNN・畳み込み・常微分方程式の良いところ取りをしたモデルになるというのがアピールポイントになります．
-<section style="text-align: center;">
 
-![](images/lssl/lssl.png)
+<center><img src="images/lssl/lssl.png" width="90%"></center>
 
-</section>
-
-## 定式化
+## 6.1. 定式化
 LSSLは次の式で表されます．
 
 $$
 \begin{align*}
 \frac{d}{dt}x(t)&=Ax(t)+Bu(t) \\
 y(t)&=Cx(t)+Du(t)
-\end{align*}
+\end{align*}\tag{44}
 $$
 
-この式は状態空間モデルと呼ばれています．
-第1式が隠れ状態の更新を行い，第2式が出力を行います．
-そして変数が若干違いますが，第1式はHiPPOと同じ式の形をしています．
+この式は状態空間モデルと呼ばれていて，第1式が隠れ状態の更新を行い，第2式が出力を行います．  
+変数が若干違いますが，第1式はHiPPOと同じ式の形をしています．
 
 HiPPOと同様に離散化を行います．
 $\alpha=\frac{1}{2}$のGBT（=Bilinear）を用いれば，
@@ -1223,7 +1209,7 @@ $$
 \begin{align*}
 x_{t} &= \bar{A}x_{t-1} + \bar{B}u_{t} \\
 y_t &= Cx_t + Du_t
-\end{align*}
+\end{align*}\tag{45}
 $$
 
 と離散化できます．ただし，
@@ -1232,21 +1218,22 @@ $$
 \bar{B} = (I-\frac{1}{2} \Delta t A)^{-1}\Delta tB
 $$
 
-## LSSL ⇔ RNN
+## 6.2. LSSLの表現力
+実は，LSSLは非常に強力な表現力を持ちます．
+これを確認していきます．
+
+### 6.2.1. LSSL ⇔ RNN
 ここでは，LSSLがRNNと同等の表現力を持つことを見ていきます．
 
-### LSSL ⇒ RNN
+#### 6.2.1.1. LSSL ⇒ RNN
 これは非常にシンプルです．
-LSSLにおける式を図示すると以下のようになり，再帰構造を持つことは明らかです．
+
+LSSLにおける式を図示すると以下のようになり，再帰構造を持つことは明らかです．  
 LSSLは行列演算で成り立っているので，非線形層を持たない線形RNNと捉えることができます．
 
-<section style="text-align: center;">
+<center><img src="images/lssl/recurrent.png" width="40%"></center>
 
-![](images/lssl/recurrent.png)
-
-</section>
-
-### RNN ⇒ LSSL
+### 6.2.2. RNN ⇒ LSSL
 こちらが問題ですね．
 RNNがLSSLであることを証明していきます．
 
@@ -1258,7 +1245,7 @@ $$
 x_k = (1 - \sigma(z_k)) x_{k-1} + \sigma(z_k) f(k, x_{k-1}),
 $$
 
-ここで，$f(k, x)$ は第2引数に対してリプシッツ連続な任意の関数である（例えば，入力$u_k$ に依存する形を取る）．
+ここで，$f(k, x)$ は第2引数に対してリプシッツ連続な任意の関数である（例えば，入力$u_k$ に依存する形を取る）．  
 このRNNの式は，以下の連続時間の常微分方程式の離散化に対応する：
 $$
 \dot{x}(t) = -x(t) + f(t, x(t)).
@@ -1290,7 +1277,7 @@ $$
 
 **補題 C.2: ピカール反復による非線形性の近似**
 
-関数 $f(t, x)$ が Picard-Lindelöf の定理の条件を満たすとする．
+関数 $f(t, x)$ が Picard-Lindelöf の定理の条件を満たすとする．  
 このとき，次の反復で構築される関数列 $x^{(\ell)}(t)$ は，連続時間の初期値問題（IVP）の解に収束する：
 $$
 \begin{align*}
@@ -1331,14 +1318,14 @@ $$
     \dot{y}^{(\ell)}(t) &= -y^{(\ell)}(t) + u^{(\ell)}(t).
 \end{align*}
 $$
-この構造は，補題 C.2 におけるピカール反復の形式と完全に一致する．
+この構造は，補題 C.2 におけるピカール反復の形式と完全に一致する．  
 したがって，LSSLを深さ方向に積み重ねることで，このODEの解を近似することができる．
 
 ---
 
 **命題 C.3: 深い線形 RNN の対応**
 
-次の形式の深い線形 RNN は，ピカール反復に基づき，非線形ダイナミクスを近似する：
+次の形式のDeep線形 RNN は，ピカール反復に基づき，非線形ダイナミクスを近似する：
 $$
 \begin{align*}
     x^{(\ell)}_k &= (1 - \sigma(z_k)) x^{(\ell)}_{k-1} + \sigma(z_k) u^{(\ell)}_k, \\
@@ -1349,20 +1336,21 @@ $$
 
 **証明**
 
-補題 C.1 により，この RNN の形式は連続時間の ODE の離散化に対応する．
+補題 C.1 により，この RNN の形式は連続時間の ODE の離散化に対応する．  
 また，補題 C.2 により，深さ方向への積層はピカール反復と同等であるため，この RNN は非線形ダイナミクスを近似することができる．
 
 ---
 
 一気に補題等を紹介しました．
-補題 C.1 より，ゲート機構を持つRNNは，特定のパラメータのLSSLを離散近似したものであることが分かります．
-そして，定理 4 および命題 C.3 より，LSSLを重ねること，ゲート機構を持つRNNを重ねることはピカールの反復近似法と同等の操作であることが分かります．
+
+補題 C.1 より，ゲート機構を持つRNNは，特定のパラメータのLSSLを離散近似したものであることが分かります．  
+そして，定理 4 および命題 C.3 より，LSSLを重ねること，ゲート機構を持つRNNを重ねることはピカールの反復近似法と同等の操作であることが分かります．  
 つまり，ゲート機構を持つRNNとは何層も重ねたLSSLの一種であるということです．
 
-## LSSL ⇔ Convolution
+### 6.2.3. LSSL ⇔ Convolution
 ここでは，LSSLが畳み込みと同等の表現力を持つことを見ていきます．
 
-### LSSL ⇒ Convolution
+#### 6.2.3.1. LSSL ⇒ Convolution
 LSSLの式を変形すると
 $$
 \begin{align*}
@@ -1373,7 +1361,7 @@ y_t &= C(\bar{A}x_{t-1}+\bar{B}u_t)+Du_t \\
 \end{align*}
 $$
 となり，この式は $y=\mathcal{K}_L(\bar{A},\bar{B},C)*u+Du$ という畳み込み演算で記述できます．
-$$
+$$\tag{46}
 \mathcal{K}_L := (C\bar{B},C\bar{A}\bar{B},...,C\bar{A}^{L-1}\bar{B})
 $$
 
@@ -1382,50 +1370,60 @@ $$
 一方で，$\bar{A}^{L-1}$ を計算するには非常に時間がかかるのでここの工夫は必須になります．
 この部分は後に説明します．
 
-### Convolution ⇒ LSSL
+#### 6.2.3.2. Convolution ⇒ LSSL
 畳み込みの式は次のようになります．
 $$
 y(t)=\int h(\tau)u(t-\tau)d\tau
 $$
-ここで$h$はフィルタです．
-詳細は省きますが，畳み込みと状態空間モデルは密接な関係にあり，畳み込みフィルタ $h$ は有理関数として表現でき、その有理関数は状態空間モデルによって表されます。
-つまり、どのような畳み込みフィルタでも、状態空間モデルを使って近似が可能です。
+ここで$h$はフィルタです．  
+詳細は省きますが，畳み込みと状態空間モデルは密接な関係にあり，畳み込みフィルタ $h$ は有理関数として表現でき，その有理関数は状態空間モデルによって表されます．  
+つまり，どのような畳み込みフィルタでも，状態空間モデルを使って近似が可能です．
 
-HiPPOの部分でも触れましたが，LSSLの行列の設定によってはスライディングウィンドウを表現することができます．
+HiPPOでも触れましたが，LSSLの行列の設定によってはスライディングウィンドウを表現することができます．
 
-## 表現力
-さて，ここまでについてまとめると，
+### 6.2.4. 表現力のまとめ
+LSSLの表現力についてまとめます．
 - LSSLはRNNを含み，非線形常微分方程式を解くだけの十分な表現力を持つ
 - LSSLは畳み込みとして表現できるため，非常に高速に計算可能
 
-## 学習
-ここまでLSSLの表現力について解説してきました．
+## 6.3. 学習
+ここまでLSSLの表現力について解説してきました．  
 次にどのようにして学習を行うかを見ていきます．
 重要なポイントは次の2つです．
-- Aを学習するときに，HiPPOの枠組みから外れないようにしたい
-- 畳み込みカーネルを高速に計算したい
 
-しかし残念なことに，LSSLにおける工夫は綺麗ではないらしく，計算は非常に不安定だといいます．
+- Aを学習するときに，HiPPOの枠組みから外れないようにしたい  
+HiPPOでは，行列を固定して扱っていました．
+しかし，実用上学習によって獲得できた方が柔軟な予測ができます．  
+そこで，HiPPOの枠組みの中だけで学習したいというモチベーションが生まれます．
+
+- 畳み込みカーネルを高速に計算したい  
+式 (46) で表される畳み込みカーネルは，行列のべき乗を含むため計算に時間がかかってしまいます．  
+そのため，高速な計算方法を考えたいです．
+
+しかし残念なことに，LSSLにおける工夫は綺麗ではないらしく，計算は非常に不安定だといいます．  
 これを解決したのが次に紹介するS4になります．
 
-# S4 (Structured State Space Sequence model)
+# 7. S4 (Structured State Space Sequence model)
 前述したとおり，S4はLSSLにおける2つの課題を華麗に解決した手法です．
-LSSLでは，HiPPOの一般的なクラスを求めることでHiPPO行列の学習を行っていましたが，S4ではこれを諦め，最低限HiPPO-LagT・HiPPO-LegT・HiPPO-LegSが含まれるクラスを求めることにします．
-そして，そうして求めたクラスでは，畳み込みカーネルを高速に計算することができます．
+
+LSSLでは，HiPPOの一般的なクラスを求めることでHiPPO行列の学習を行っていました．  
+しかし，すべてのHiPPO行列を含むようなクラスを導出することはかなり難しいです．  
+そこでS4ではこれを諦め，最低限HiPPO-LagT・HiPPO-LegT・HiPPO-LegSが含まれるクラスを求めることにします．  
+さらに，こうして求めたクラスでは，畳み込みカーネルを高速に計算できることも示します．
 
 $$
 \begin{align*}
 x_{t} &= \bar{A}x_{t-1} + \bar{B}u_{t} \\
 y_t &= Cx_t + Du_t
-\end{align*}
+\end{align*}\tag{45}
 $$
 
-## 対角化のモチベーション
-畳み込みカーネルを計算するとき，行列 $A$ が対角化できたらなぁ～なんてことを考えます．
+## 7.1. 対角化のモチベーション
+畳み込みカーネルを計算するとき，行列 $A$ が対角化できたらなぁ～なんてことを考えます．  
 なぜなら，対角行列であればべき乗を楽に計算できるからです．
 
 >[!NOTE]
->### なぜ対角化？
+>### 対角化と対角行列のべき乗
 ><details>
 ><summary> 詳細 </summary>
 >
@@ -1516,13 +1514,14 @@ HiPPO-LegSによって導かれるHiPPO行列 $A$ は，行列 $V_{i,j}=\begin{p
 
 ---
 
-補題1では，$A$ を対角化しても，$B,C$ を適切に変更することで出力に影響を与えないことを保証しています．
+補題1では，$A$ を対角化しても，$B,C$ を適切に変更することで出力に影響を与えないことを保証しています．  
 補題2では，HiPPO行列が対角化可能であることを主張している一方で，正則行列 $V$ の要素が二項係数に従うため，潜在次元数 $N$ に応じて指数的に増えてしまい，数値的に安定しないことを示しています．
 
 つまり，対角化するモチベーションはあるものの現実的に難しいということです．
+
 LSSLでも同様の議論を行い，対角化とは別のアプローチを取ったのですが，そちらも $N$ が大きくなると数値的に安定しないことがこの論文内で示されています．
 
-## Normal Plus Low-Rank (NPLR)とDiagonal Plus Low-Rank (DPLR)
+## 7.2. Normal Plus Low-Rank (NPLR)とDiagonal Plus Low-Rank (DPLR)
 さて，対角化は難しそうだということが分かったので，ここでは対角化チックな別の方法を取ることにします．
 
 そこでNormal Plus Low-Rank (NPLR)という形式を考えます．
@@ -1532,7 +1531,7 @@ LSSLでも同様の議論を行い，対角化とは別のアプローチを取�
 **定義** : Normal Plus Low-Rank (NPLR)
 
 行列 $A\in\mathbb{R}^{N\times N}$ が正規行列 $F$ と低ランク行列 $P,Q$ を用いて以下のように書けるとき，$A$ はNPLR表現を持つという．
-$$
+$$\tag{47}
 A = F - PQ^\top
 $$
 
@@ -1546,9 +1545,9 @@ $$
 
 **定理 1**
 
-すべてのHiPPO行列は，ユリタリ行列 $V\in\mathbb{C}^{N\times N}$，対角行列 $\Lambda$，低ランク行列 $P,Q\in\mathbb{R}^{N\times r}$で表されるNPLR表現を持つ．
+すべてのHiPPO行列は，ユリタリ行列 $V\in\mathbb{C}^{N\times N}$，対角行列 $\Lambda$，低ランク行列 $P,Q\in\mathbb{R}^{N\times r}$で表されるNPLR表現を持つ．  
 すべてのHiPPO行列において，$r=1$ か $r=2$ であり，特にHiPPO-LegSでは $r=1$ である．
-$$
+$$\tag{48}
 A = V\Lambda V^* - PQ^\top = V(\Lambda-(V^*P)(V^*Q)^*)V^*
 $$
 
@@ -1560,6 +1559,7 @@ $$
 <summary> HiPPO-LagT </summary>
 
 HiPPO-LagTは次の式で表せました．
+
 $$
 \begin{align*}
 A_{n,k} &= -\begin{bmatrix}
@@ -1570,7 +1570,9 @@ A_{n,k} &= -\begin{bmatrix}
 \end{bmatrix}
 \end{align*}
 $$
+
 ここに行列 $M_{n,k}=\frac{1}{2}$ を加えると，
+
 $$
 \begin{align*}
 M_{n,k}+A_{n,k} &= -\begin{bmatrix}
@@ -1581,7 +1583,9 @@ M_{n,k}+A_{n,k} &= -\begin{bmatrix}
 \end{bmatrix}
 \end{align*}
 $$
+
 ここで交代行列 $S$ を以下のように定義します．
+
 $$
 \begin{align*}
 S = -\begin{bmatrix}
@@ -1592,19 +1596,23 @@ S = -\begin{bmatrix}
 \end{bmatrix}
 \end{align*}
 $$
+
 すると，
+
 $$
 M_{n,k}+A_{n,k} = -\frac{\beta}{2}I + S
 $$
-と表せます．
-そして交代行列はユリタリ行列によって対角化可能であることが知られており，$-\frac{\beta}{2}I + S$ も同じ行列で対角化することができます．
+
+そして交代行列はユリタリ行列によって対角化可能であることが知られており，$-\frac{\beta}{2}I + S$ も同じ行列で対角化することができます．  
 さらに，例えば $P_n,Q_k=\frac{1}{\sqrt{2}}$ とおけば，$M_{n,k}=PQ^\top$ とすることができるので，
+
 $$
 \begin{align*}
 A&=(-\frac{\beta}{2}I + S) - M \\
 &=V\Lambda V^*-PQ^\top
 \end{align*}
 $$
+
 となり，NPLR表現を持ちます．
 
 </details>
@@ -1613,6 +1621,7 @@ $$
 <summary> HiPPO-LegT </summary>
 
 HiPPO-LegTは次の式で表せました．
+
 $$
 \begin{align*}
 A_{nk} &= -(2n + 1)
@@ -1622,8 +1631,10 @@ A_{nk} &= -(2n + 1)
 \end{cases} \\
 \end{align*}
 $$
+
 ここではスケーリング $(2n + 1)$ は無視して考えます．
 次のような行列 $M_{nk}$ を定義します．
+
 $$
 \begin{align*}
 M_{nk}= 
@@ -1633,7 +1644,9 @@ M_{nk}=
 \end{cases}
 \end{align*}
 $$
+
 すると，
+
 $$
 \begin{align*}
 M_{nk} + A_{nk} = -
@@ -1644,6 +1657,7 @@ M_{nk} + A_{nk} = -
 \end{cases}
 \end{align*}
 $$
+
 これは交代行列です．
 この交代行列を $S$ とします．
 
@@ -1677,6 +1691,7 @@ $$
 
 交代行列はユリタリ行列によって対角化可能であることが知られています．
 さらに，例えば
+
 $$
 \begin{align*}
 P,Q=\begin{bmatrix}
@@ -1688,13 +1703,16 @@ P,Q=\begin{bmatrix}
 \end{bmatrix}
 \end{align*}
 $$
+
 とおけば，$M_{n,k}=PQ^\top$ とすることができるので，
+
 $$
 \begin{align*}
 A&=S - M \\
 &=V\Lambda V^*-PQ^\top
 \end{align*}
 $$
+
 となり，NPLR表現を持ちます．
 </details>
 
@@ -1702,6 +1720,7 @@ $$
 <summary> HiPPO-LegS </summary>
 
 HiPPO-LegSは次の式で表せました．
+
 $$
 \begin{align*}
 A_{nk} &= -
@@ -1712,7 +1731,9 @@ n+1 & \text{if}\quad n=k \\
 \end{cases}
 \end{align*}
 $$
+
 ここに行列 $M_{nk} = \frac{1}{2} (2n + 1)^{1/2} (2k + 1)^{1/2}$ を加えると，
+
 $$
 \begin{align*}
 M_{nk} + A_{nk} = -
@@ -1723,7 +1744,9 @@ M_{nk} + A_{nk} = -
 \end{cases}
 \end{align*}
 $$
+
 ここで交代行列 $S$ を以下のように定義します．
+
 $$
 \begin{align*}
 S_{nk} = -
@@ -1734,19 +1757,23 @@ S_{nk} = -
 \end{cases}
 \end{align*}
 $$
+
 すると，
+
 $$
 M_{n,k}+A_{n,k} = -\frac{1}{2}I + S
 $$
-と表せます．
-そして交代行列はユリタリ行列によって対角化可能であることが知られており，$-\frac{1}{2}I + S$ も同じ行列で対角化することができます．
+
+そして交代行列はユリタリ行列によって対角化可能であることが知られており，$-\frac{1}{2}I + S$ も同じ行列で対角化することができます．  
 さらに，例えば $P_n=\frac{1}{2} (2n + 1)^{1/2}, Q_k=(2k + 1)^{1/2}$ とおけば，$M_{n,k}=PQ^\top$ とすることができるので，
+
 $$
 \begin{align*}
 A&=(-\frac{1}{2}I + S) - M \\
 &=V\Lambda V^*-PQ^\top
 \end{align*}
 $$
+
 となり，NPLR表現を持ちます．
 </details>
 
@@ -1759,7 +1786,7 @@ $$
 **定義** : Diagonal Plus Low-Rank (DPLR)
 
 行列 $A\in\mathbb{R}^{N\times N}$ が対角行列 $\Lambda$ と低ランク行列 $P,Q$ を用いて以下のように書けるとき，$A$ はDPLR表現を持つという．
-$$
+$$\tag{49}
 A = \Lambda - PQ^\top
 $$
 
@@ -1774,25 +1801,25 @@ V^*AV &= \Lambda-(V^*P)(V^*Q)^*
 $$
 
 そしてここに，補題1が効いてきます．
-状態空間モデルにおいては，共役な作用を施しても出力は変わりません．
-そのため，NPLR表現を持つHiPPO行列は，DPLR表現を持つと考えてよく，DPLRを満たすように行列 $A$ を学習させます．
+状態空間モデルにおいては，共役な作用を施しても出力は変わりません．  
+そのため，NPLR表現を持つHiPPO行列は，DPLR表現を持つと考えてよく，DPLRを満たすように行列 $A$ を学習させます．  
 つまり，$A=\Lambda - PQ^\top$ として，$\Lambda,P,Q$ を学習させます．
 
-大切なのは，対角行列を含んだ式が得られたということです．
+大切なのは，対角行列を含んだ式が得られたということです．  
 対角化は諦めることになりましたが，それに近しい形を得たことでこの後の計算が楽になります．
 
-## 計算アルゴリズム
-さて，いよいよS4の最もすごい部分を見ていきます．
+## 7.3. 計算アルゴリズム
+さて，いよいよS4の最もすごい部分を見ていきます．  
 一度思い出してもらうと，S4は以下の2つの課題に対処するための手法でした．
 
 - Aを学習するときに，HiPPOの枠組みから外れないようにしたい
 - 畳み込みカーネルを高速に計算したい
 
-このうち1つ目は，DPLRを満たすように学習すれば解決できることを求めました．
-ここからは2つ目の，畳み込みカーネル $\mathcal{K}_L := (C\bar{B},C\bar{A}\bar{B},...,C\bar{A}^{L-1}\bar{B})$ を高速に計算する方法についてです．
+このうち1つ目は，DPLRを満たすように学習すれば解決できることを求めました．  
+ここからは2つ目の，畳み込みカーネル $\mathcal{K}_L := (C\bar{B},C\bar{A}\bar{B},...,C\bar{A}^{L-1}\bar{B})$ を高速に計算する方法についてです．  
 S4では，愚直に計算すると $O(N^3L)$ かかる計算を $\tilde{O}(N+L)$ まで落とします．
 
-### 定式化
+### 7.3.1. 定式化
 改めて定式化を確認します．
 状態空間モデルにおける定式化は次のような常微分方程式を含んでいました．
 
@@ -1800,7 +1827,7 @@ $$
 \begin{align*}
 \frac{d}{dt}x(t)&=Ax(t)+Bu(t) \\
 y(t)&=Cx(t)+Du(t)
-\end{align*}
+\end{align*}\tag{44}
 $$
 ここで，$u(t)$ は時間 $t$ に依存する入力系列，$y(t)$ は出力系列，$x(t)\in\mathbb{R}^{N\times 1}$ は隠れ状態，$A\in\mathbb{R}^{N\times N},B\in\mathbb{R}^{N\times 1},C\in\mathbb{R}^{1\times N},D\in\mathbb{R}$ はパラメータです．
 
@@ -1811,28 +1838,27 @@ $$
 $$
 \begin{align*}
 x_{t} &= \bar{A}x_{t-1} + \bar{B}u_{t} \\
-y_t &= Cx_t + Du_t
-\end{align*}\\
-
-\bar{A} = (I-\frac{1}{2} \Delta t A)^{-1}(I+\frac{1}{2} \Delta t A) \\
-\bar{B} = (I-\frac{1}{2} \Delta t A)^{-1}\Delta tB
+y_t &= Cx_t + Du_t \\
+\bar{A} &= (I-\frac{1}{2} \Delta t A)^{-1}(I+\frac{1}{2} \Delta t A) \\
+\bar{B} &= (I-\frac{1}{2} \Delta t A)^{-1}\Delta tB
+\end{align*}\tag{45}
 $$
 
 ---
 
 この式は畳み込みとして捉えることができ，畳み込みカーネルは次のようになります．
-$$
+$$\tag{46}
 \mathcal{K}_L \in \mathbb{R}^L := (C\bar{B},C\bar{A}\bar{B},...,C\bar{A}^{L-1}\bar{B})
 $$
 ここで，$L$ は層の数です．
 
 また，$A$ はDPLR形式を持つため，次が成り立ちます．
-$$
+$$\tag{49}
 A=\Lambda - PQ^\top
 $$
 ここで，$\Lambda\in\mathbb{R}^{N\times N}$ は対角行列で，$P,Q\in\mathbb{R}^{N\times r}$です．
 
-### アルゴリズムの詳細
+### 7.3.2. アルゴリズムの詳細
 簡単のため $r=1$ とし（実際にHiPPO-LagT，HiPPO-LegSは $r=1$），統一性のため $C\in\mathbb{R}^{N\times 1}$ として以下のように整えます．
 
 ---
@@ -1846,20 +1872,25 @@ y_t &= C^*x_t + Du_t \\
 \bar{B} &= (I-\frac{1}{2} \Delta t A)^{-1}\Delta tB \\
 
 \mathcal{K}_L(\bar{A},\bar{B},C) \in \mathbb{R}^L &:= (C^*\bar{B},C^*\bar{A}\bar{B},...,C^*\bar{A}^{L-1}\bar{B})
-\end{align*}
+\end{align*}\tag{50}
 $$
 
 ---
 
 $\mathcal{K}_L$ を直接計算する代わりに次のような生成関数（母関数）を考えます．
-$$
+
+$$\tag{51}
 \hat{K}(z; \bar{A}, \bar{B}, C) \in \mathbb{C} := \sum_{k=0}^{\infty} C^* \bar{A}^k \bar{B} z^k = C^* (I - \bar{A}z)^{-1} \bar{B}
 $$
+
 式変形には無限等比級数の和の公式を使っています．
-また，長さ $L$ までの生成関数を以下のように定義します．
+また，$k=L-1$ までの生成関数を以下のように定義します．
+
 $$
-\hat{K}_L(z; \bar{A}, \bar{B}, C) \in \mathbb{C} := \sum_{k=0}^{L-1} C^* \bar{A}^k \bar{B} z^k = C^* (I - \bar{A}^L z^L)(I - \bar{A}z)^{-1} \bar{B} \\
-\hat{K}_L(\Omega; \bar{A}, \bar{B}, C) \in \mathbb{C}^L := \left( \hat{K}_L(z_j; \bar{A}, \bar{B}, C) \right)_{j \in [L]}
+\begin{align*}
+\hat{K}_L(z; \bar{A}, \bar{B}, C) \in \mathbb{C} &:= \sum_{k=0}^{L-1} C^* \bar{A}^k \bar{B} z^k = C^* (I - \bar{A}^L z^L)(I - \bar{A}z)^{-1} \bar{B} \\
+\hat{K}_L(\Omega; \bar{A}, \bar{B}, C) \in \mathbb{C}^L &:= \left( \hat{K}_L(z_j; \bar{A}, \bar{B}, C) \right)_{j \in [L]}
+\end{align*}\tag{52}
 $$
 
 なぜこのような関数を考えるかというと，次の補題が成り立つからです．
@@ -1871,7 +1902,7 @@ $$
 
 **証明**
 
-カーネルの $k$ 番目の要素を $K_k$ とすると
+カーネル $\mathcal{K}_L(\bar{A},\bar{B},C)$ の $k$ 番目の要素を $K_k$ とすると
 $$
 K_k = C^* \bar{A}^k \bar{B}
 $$
@@ -1882,12 +1913,12 @@ $$
 &= \sum_{k=0}^{L-1} K_k \exp(-2\pi i\frac{jk}{L})
 \end{align*}
 $$
-これは離散フーリエ変換の式と一致しており，$\hat{K}_L$ が $K_k$ を離散フーリエ変換したものだと分かる．
+これは離散フーリエ変換の式と一致しており，$\hat{K}_L$ が $K_k$ を離散フーリエ変換したものだと分かる．  
 したがって，$\hat{K}_L$ が求まれば，逆離散フーリエ変換によって $K_k$ を求めることができ，高速フーリエ変換アルゴリズムを用いれば，$O(L\log L)$ で計算可能である．
 
 ---
 
-この補題から，$\hat{K}_L(z; \bar{A}, \bar{B}, C)$ に1の $L$ 乗根を入れて逆離散フーリエ変換をすればカーネルが求まることが分かりました．
+この補題から，$\hat{K}_L(z; \bar{A}, \bar{B}, C)$ に1の $L$ 乗根を入れて逆離散フーリエ変換をすればカーネルが求まることが分かりました．  
 では，$\hat{K}_L(z; \bar{A}, \bar{B}, C)$ はどうやって求めるのでしょうか？
 その答えが次の補題です．
 
@@ -1900,7 +1931,7 @@ $$
 \hat{K}_L(z; \bar{A}, \bar{B}, C) &= \frac{2}{1 + z} \left[ \tilde{C}^* R(z) B - \tilde{C}^* R(z) P (1 + Q^* R(z) P)^{-1} Q^* R(z) B \right] \\
 \tilde{C} &= (I - \bar{A}^L)^* C \\
 R(z; \Lambda) &= \left( \frac{2}{\Delta} \frac{1 - z}{1 + z} I - \Lambda \right)^{-1}
-\end{align*}
+\end{align*}\tag{53}
 $$
 
 **証明**
@@ -1966,12 +1997,12 @@ $$
 
 ---
 
-一見すると複雑な計算に見えますが，実はよく見ると中に出てくる行列積 $\tilde{C}^* R(z) B$，$\tilde{C}^* R(z) P$，$Q^* R(z) P$，$Q^* R(z) B$ は全てスカラーになります．
-しかも $R(z)$ は対角行列なので，登場する行列さえ分かれば $O(N)$ で計算することが可能です．
-登場する行列（ベクトル）についてですが，$B,P,Q$ はもともと学習パラメータです．
+一見すると複雑な計算に見えますが，実はよく見ると中に出てくる行列積 $\tilde{C}^* R(z) B$，$\tilde{C}^* R(z) P$，$Q^* R(z) P$，$Q^* R(z) B$ は全てスカラーになります．  
+しかも $R(z)$ は対角行列なので，登場する行列さえ分かれば $O(N)$ で計算することが可能です．  
+登場する行列（ベクトル）についてですが，$B,P,Q$ はもともと学習パラメータです．  
 また，$\tilde{C} = (I - \bar{A}^L)^* C$ については，はじめから $\tilde{C}$ を学習すると考えれば問題ありません．
 
-そして最後に $R(z)$ ですが，対角行列の逆行列なので $O(N)$ で計算可能であり，問題なく見えます．
+そして最後に $R(z)$ ですが，対角行列の逆行列なので $O(N)$ で計算可能であり，問題なく見えます．  
 しかし，$z$ は1の $L$ 乗根全てなので，$O(NL)$ の計算量がかかってしまいます．
 
 そこで全ての行列積 $\tilde{C}^* R(z) B$，$\tilde{C}^* R(z) P$，$Q^* R(z) P$，$Q^* R(z) B$ を一括で計算することを考えてみると，次のような行列を計算すれば良いです．
@@ -1984,8 +2015,8 @@ K &= \begin{bmatrix} \tilde{C} & Q \end {bmatrix}^* R(z) \begin{bmatrix} B & P \
 \end{align*}
 $$
 
-ここでとても嬉しいことがあります．
-$R(z)$ という行列は実はコーシー行列と呼ばれるものであり，その行列積は高速多重極法というアルゴリズムによって命題5のような計算量で導くことができます．
+ここでとても嬉しいことがあります．  
+実は $R(z)$ という行列はコーシー行列と呼ばれるものであり，その行列積は高速多重極法というアルゴリズムによって命題5のような計算量で導くことができます．
 
 ---
 
@@ -2014,91 +2045,71 @@ $$
 
 したがって，$\hat{K}_L(z; \bar{A}, \bar{B}, C)$ は，$\tilde{O}(L+N)$（ソフトオー記法）で求めることができ，逆離散フーリエ変換によって $O(L\log L)$ の計算量でカーネルを計算することができます．
 
-<section style="text-align: center;">
-
-![](images/s4/algorithm.png)
-
-</section>
+<center><img src="images/s4/algorithm.png" width="80%"></center>
 
 >[!NOTE]
->忘れてはいけないのは，S4には畳み込みモードと再帰モードがあるということです．
->ここでは畳み込みについて解説しましたが，再帰的な計算では $O(N)$ で計算できます．
+>忘れてはいけないのは，S4には畳み込みモードと再帰モードがあるということです．  
+>ここでは畳み込みについて解説しましたが，再帰的な計算では $O(N)$ で計算できます．  
 >実用上，学習時には並列計算可能な畳み込みモードを使用し，推論時には効率的な再帰モードを使用します．
 
 >[!NOTE]
 >後続研究により，$A=\Lambda-PP^*$ とした方が安定性があるとされています．
 >ここで紹介する結果は，$A=\Lambda-PP^*$ としたときの結果になります．
 
-## アーキテクチャ
+## 7.4. アーキテクチャ
 モデルアーキテクチャについて軽く補足します．
-S4レイヤーは，$\mathbb{R}^L\rightarrow\mathbb{R}^L$ というように1次元の入力に対し，入力と等しい長さの出力を行います．
-もし入力特徴量が $H$ 個ある場合は，その分だけ層を並列します．
-そして，得られた出力 $\mathbb{R}^{H\times L}$ を位置に合わせて線形層でミックスするという操作を行います．
+
+S4レイヤーは，$\mathbb{R}^L\rightarrow\mathbb{R}^L$ というように1次元の入力に対し，入力と等しい長さの出力を行います．  
+もし入力特徴量が $H$ 個ある場合は，その分だけ層を並列します．  
+そして，得られた出力 $\mathbb{R}^{H\times L}$ を位置に合わせて線形層でミックスするという操作を行います．  
 そのため，層としての働きはAttention層とほぼ同じと考えていいと思います．
 
-## 実験結果
-### Long Range Arena
-以下の結果は，Long Range Arenaという長期依存性に関するタスクの結果になります．
-一目で分かるように，圧倒的な性能を誇っています．
+## 7.5. 実験結果
+### 7.5.1. Long Range Arena
+以下の結果は，Long Range Arenaという長期依存性に関するタスクの結果になります．  
+一目で分かるように，圧倒的な性能を誇っています．  
 特に，PATH-Xというタスクは，これまで乱択と同程度の精度しか出せていなかったにもかかわらず，S4では96%という精度をたたき出しました．
 
-<section style="text-align: center;">
+<center><img src="images/s4/res1.png" width="70%"></center>
 
-![](images/s4/res1.png)
-
-</section>
-
-PATH-Xというのは，左の図のように2つの点が点線で繋がれているかを当てるベンチマークです．
+PATH-Xというのは，左の図のように2つの点が点線で繋がれているかを当てるベンチマークです．  
 2d-convは使用不可であり，1次元のベクトルにして入力されます．
 右の図は学習されたカーネルになります．
 
-<section style="text-align: center;">
+<center><img src="images/s4/res2.png" width="70%"></center>
 
-![](images/s4/res2.png)
-
-</section>
-
-### 時系列予測
+### 7.5.2. 時系列予測
 一般的な時系列モデルとしての性能比較もされています．
 Transformer系のモデルと比較しても優秀な成績をおさめています．
 
-<section style="text-align: center;">
+<center><img src="images/s4/res3.png" width="90%"></center>
 
-![](images/s4/res3.png)
-
-</section>
-
-### 画像・テキスト
-画像とテキストについても紹介します．
-精度に関してはTransformerの方が良かったりはしますが，特筆すべきは処理の速さになります．
+### 7.5.3. 画像・テキスト
+画像とテキストについても紹介します．  
+精度に関してはTransformerの方が良かったりはしますが，特筆すべきは処理の速さになります．  
 言語の場合，Transformerの60倍の処理速度です．
-S4層+S4層+MLPを16ブロック重ねてモデルを作成しています．
+S4層+S4層+MLPを16ブロック重ねてモデルを作成しています．  
 S4層は，Self-Attention層に比べてパラメータ数が1/4なので，1つのブロックに複数のS4層を入れられます．
 
-<section style="text-align: center;">
+<center><img src="images/s4/res4.png" width="90%"></center>
 
-![](images/s4/res4.png)
-
-</section>
-
-### S4D
+### 7.5.4. S4D
 S4の後続研究の1つにS4Dという手法があります．
+
 S4Dでは，行列 $A$ を対角行列として学習させます．
+
 これまでの話では，対角化は難しいということでしたが，完全なHiPPOの枠組みを諦め，できる限りHiPPOを近似できるように努力することで，対角行列でもS4に匹敵する結果になることが示されています．
 
-結局のところS4の方が精度は高いのですが，対角行列とした方が計算の楽さや解釈性は高いですよね．
+結局のところS4の方が精度は高いのですが，対角行列とした方が計算の楽さや解釈性は高いですよね．  
 そのシンプルさが売りといった感じです．
 
-<section style="text-align: center;">
+<center><img src="images/s4/s4d.png" width="80%"></center>
 
-![](images/s4/s4d.png)
-
-</section>
-
-## 考察
+## 7.6. 考察
 ここまで読むと，S4はとても素晴らしいモデルに感じます．
-しかし，時系列モデルのベンチマーク比較に登場しているところを見たことがありません．
-時系列予測で示した結果は，TimesNetなどの手法でも使われているベンチマークですが，比較対象にはなりませんでした．
+
+しかし，時系列モデルのベンチマーク比較に登場しているところを見たことがありません．  
+時系列予測で示した結果は，TimesNetなどの手法でも使われているベンチマークですが，比較対象にはなりませんでした．  
 もしかしたら，どこか使い勝手が悪いのでしょうか？
 
 以下のような記事を見つけました．
@@ -2106,37 +2117,30 @@ S4Dでは，行列 $A$ を対角行列として学習させます．
 https://ai-scholar.tech/articles/time-series/FiLM
 
 どうやら直交多項式で近似するという性質上，隠れ次元数が増えるほどオーバーフィッティングしやすく，ノイズに弱くなってしまうようです．
-（逆に言えば，入力の保存は精度がかなり高い）
-記事の手法では，ノイズを低減することで飛躍的に向上させています．
+（逆に言えば，入力の保存は精度がかなり高い）  
+記事の手法では，ノイズを低減することで飛躍的に向上させています．  
 しかしこの手法もまた，別の論文で出てきたところを見たことがありません...
 
 誰か検証して...
 
-# H3 (Hungry Hungry HiPPOs)
-## S4の弱点
-さて，S4というとても素晴らしい手法が提案されたわけですが，そんなS4にも弱点があります．
+# 8. H3 (Hungry Hungry HiPPOs)
+## 8.1. S4の弱点
+S4というとても素晴らしい手法が提案されたわけですが，そんなS4にも弱点があります．  
 まずは，H3の位置づけについてまとめられた以下の図を見てください．
 
-<section style="text-align: center;">
-
-![](images/h3/about.png)
-
-</section>
+<center><img src="images/h3/about.png" width="80%"></center>
 
 S4の右下部分にTransformerモデルとの比較が簡単に載っています．
-この記述から，S4はTransformerに比べて計算時間と自然言語処理分野が劣っていることが分かります．
-なんで計算時間が劣っているんだ？と思うかもしれませんが，実はTransformerの方がGPUフレンドリーに設計されているので，理論上の計算速度とは違う結果になってしまっているのです．
+
+この記述から，S4はTransformerに比べて計算時間と自然言語処理分野が劣っていることが分かります．  
+なんで計算時間が劣っているんだ？と思うかもしれませんが，実はTransformerの方がGPUフレンドリーに設計されているので，理論上の計算速度とは違う結果になってしまっているのです．  
 この問題について，H3やmambaではハードウェアを意識したアルゴリズムを考えることで対処していますので，いったん置いておきましょう．
 
 問題は自然言語処理の分野です．
-H3ではこの問題について，2つの簡単なタスクを解かせることで，S4に足りない要素を指摘しています．
+H3ではこの問題について，2つの簡単なタスクを解かせることで，S4に足りない要素を指摘しています．  
 2つの簡単なタスクとは次の通りです．
 
-<section style="text-align: center;">
-
-![](images/h3/nlptask.png)
-
-</section>
+<center><img src="images/h3/nlptask.png" width="70%"></center>
 
 - Induction Head
 
@@ -2148,28 +2152,20 @@ H3ではこの問題について，2つの簡単なタスクを解かせるこ�
 
 これらの簡単にタスクに対して，以下のような結果が得られます．
 
-<section style="text-align: center;">
+<center><img src="images/h3/nlptask_res.png" width="70%"></center>
 
-![](images/h3/nlptask_res.png)
+Attentionは完璧に解くことができますが，S4はなどの状態空間モデルは正確に解くことができません．  
+このような自然言語処理に対する弱みを改善したのがH3です．
 
-</section>
-
-Attentionは完璧に解くことができますが，S4はなどの状態空間モデルは正確に解くことができません．
-このような言語に対する弱みを改善したのがH3です．
-
-## Attention-Likeな構造
-Induction HeadとAssociative Recallの結果から分かったことは，状態空間モデルはトークン同士を比較することができないことです．
-S4の基礎になっているHiPPOは，入力系列を直交多項式で近似しようとしているわけですから，そもそも入力同士を比較するような計算はしないのです．
+## 8.2. Attention-Likeな構造
+Induction HeadとAssociative Recallの結果から分かったことは，状態空間モデルはトークン同士を比較することができないことです．  
+S4の基礎になっているHiPPOは，入力系列を直交多項式で近似しようとしているわけですから，そもそも入力同士を比較するような計算はしないのです．  
 一方でAttentionは，QKVを用いて直接的に類似度を計算しているので，トークン同士の比較は大得意です．
 
 そこで，Attentionっぽい構造を取り入れたのがH3です．
 H3は以下のような構造をしています．
 
-<section style="text-align: center;">
-
-![](images/h3/arch.png)
-
-</section>
+<center><img src="images/h3/arch.png" width="50%"></center>
 
 QKVをそのまま取り入れているのでほぼAttentionですね．
 KVを先に計算しているのは，Linear Attentionを参考にしているからです．
@@ -2191,8 +2187,8 @@ KVを先に計算しているのは，Linear Attentionを参考にしている�
 >これにより，Attentionの計算時間を大幅に短縮することができます．
 ></details>
 
-### Shift SSM
----
+- Shift SSM
+
 過去の情報との類似度を計算するには，まずは過去の情報を保っておかなければなりません．
 そこで，次のような行列を考えます．
 $$
@@ -2204,16 +2200,16 @@ x_{t} = \bar{A}x_{t-1} + \bar{B}u_{t} \\
 \end{cases}
 $$
 この行列は対角成分の1つ下のみが1で，それ以外が0の行列です．
-この行列をかけることによって，情報を1つだけずらすことができます．
-そのため，もし $B=e_1$ （第1要素が1でそれ以外が0のベクトル）の場合，$x_i=[u_i,u_{i-1},...,u_{i-m-1}]$ のように入力をそのまま $m$ ステップ分保存することになります．
+この行列をかけることによって，情報を1つだけずらすことができます．  
+もし $B=e_1$ （第1要素が1でそれ以外が0のベクトル）の場合，$x_i=[u_i,u_{i-1},...,u_{i-m-1}]$ のように入力をそのまま $m$ ステップ分保存することになります．
 
 Shift SSMに $x^{\text{key}}$ を通した場合，直感的には次のようなベクトルを得ることができます．
 $$
 \left[ 0, x^{\text{key}}_1, ... , \sum_{k=1}^{l-1} x^{\text{key}}_k, ... , \sum_{k=1}^{L-1} x^{\text{key}}_k \right]
 $$
 
-### $\text{SSM}_\text{shift}(K)\odot V$
----
+- $\text{SSM}_\text{shift}(K)\odot V$
+
 この演算は要素積なので，Attention Weightのような役割を果たします．
 以下の式のように，過去の情報との比較を行っています．
 $$
@@ -2222,65 +2218,48 @@ $$
 \left[ x^\text{val}_1, x^\text{val}_2, ... , x^\text{val}_l, ... , x^\text{val}_L \right]
 $$
 
-### Diag SSM
----
+- Diag SSM
+
 この部分はS4Dと同じです．
 そのため，過去と比較した情報について上手くまとめている感じでしょう．
 
-### $Q \odot \text{SSM}_\text{diag}(\cdot)$
----
+- $Q \odot \text{SSM}_\text{diag}(\cdot)$
+
 最後にクエリと計算をしています．
+
 Linear Attentionをベースにしているのでイメージしづらいですが，なんとなく伝わったでしょうか？
 
-## アルゴリズム
+## 8.3. アルゴリズム
 以上をまとめると次のようになります．
 
-<section style="text-align: center;">
+<center><img src="images/h3/algorithm.png" width="80%"></center>
 
-![](images/h3/algorithm.png)
-
-</section>
-
-## 実験結果
-言語モデルに対する結果を以下に示します．
-GPT-2とGPT-Neoとの比較ですが，さまざまなモデルサイズにおいて最良の結果になっています．
+## 8.4. 実験結果
+言語モデルに対する結果を以下に示します．  
+GPT-2とGPT-Neoとの比較ですが，さまざまなモデルサイズにおいて最良の結果になっています．  
 Hybridとなっているのは，H3層とAttention層を混ぜているからです．
 どうやらH3層だけでは勝てないらしい...
 
-<section style="text-align: center;">
+<center><img src="images/h3/res1.png" width="80%"></center>
 
-![](images/h3/res1.png)
-
-</section>
-
-速度もTransformerに勝っています．
-以下は単位時間あたりに出力可能なトークン数を比較したものです．
+速度もTransformerに勝っています．  
+以下は単位時間あたりに出力可能なトークン数を比較したものです．  
 入力が長いほど差は顕著であり，最大2.4倍ほどの速度になります．
 
-<section style="text-align: center;">
+<center><img src="images/h3/res2.png" width="80%"></center>
 
-![](images/h3/res2.png)
 
-</section>
-
-# Mamba
+# 9. Mamba
 非常に長い道のりでしたが，いよいよMambaを紹介します．
-ここまでついてきたならば，Mambaの内容は心配なほどあっさりに感じるかもしれません．
-<section style="text-align: center;">
+ここまでついてきたならば，Mambaの内容は意外とあっさりに感じるかもしれません．
 
-![](images/mamba/fig.png)
+<center><img src="images/mamba/fig.png" width="80%"></center>
 
-</section>
-
-## S4の問題点
+## 9.1. S4の問題点
 MambaでもH3と同様にS4の問題点を指摘するところから始まります．
 以下の3つのタスクを考えます．
 
-<section style="text-align: center;">
-
-![](images/mamba/tasks.png)
-
-</section>
+<center><img src="images/mamba/tasks.png" width="80%"></center>
 
 - Copying
   
@@ -2294,63 +2273,63 @@ MambaでもH3と同様にS4の問題点を指摘するところから始まり�
 
   特殊なトークンの前の文字を出力するタスク
 
-Copyingについては，時間に関する情報さえ保てればいいのでS4でも対応することができます．
-しかし，Selective CopyingやInduction Headの場合，時間だけでなく文脈というのも判断しなければならず，S4では対応できないのです．
-以下に示すようにS4だけでなく，H3でも精度が十分でないことが分かります．
+Copyingについては，時間に関する情報さえ保てればいいのでS4でも対応することができます．  
+しかし，Selective CopyingやInduction Headの場合，時間だけでなく文脈というのも判断しなければならず，S4では対応できません．  
+以下に示すようにS4だけでなく，H3でも精度が十分でないことが分かります．  
 
-<section style="text-align: center;">
+<center><img src="images/mamba/res1.png" width="40%"></center>
 
-![](images/mamba/res1.png)
+>[!NOTE]
+>この表から分かるようにS4というのは層の名前で，H3はアーキテクチャの名前です．  
+>この論文では，S6という新たな層を提案した上で，Mambaというアーキテクチャを提案します．
 
-</section>
-
-ずばり何が問題なのかというと，状態空間モデルにおける行列（$A,B,C,D$）が時間に対し不変であることです．
-パラメータが不変であるということは，どの情報についても同じように記憶し，同じように忘却しているということです．
-そのため，何が重要な情報かの選択ができないのです．
-そこで，Mambaではこれらの行列を時間に依存させることでこの問題に対処します．
+ずばり何が問題なのかというと，状態空間モデルにおける行列（$A,B,C,D$）が時間に対し不変である部分です．  
+パラメータが不変であるということは，どの情報についても同じように記憶し，同じように忘却しているということです．  
+そのため，何が重要な情報かの選択ができません．  
+そこで，Mambaではこれらの行列を時間（入力）に依存させることでこの問題に対処します．
 
 >[!NOTE]
 >### 線形時不変性（LTI）としての強み
->S4やH3のように行列が時間に対して不変であるシステムを線形時不変性（LTI）といいます．
+>S4やH3のように行列が時間に対して不変であるシステムを線形時不変性（LTI）といいます．  
 >このようなシステムには前述した問題点がある一方で重要な役割を担ってきました．
+>
 >それは畳み込みです．
->LTIであるからこそ，畳み込みとして扱うことができ，高速な計算が可能だったのです．
->そのため，パラメータを時間依存させるということは，畳み込みを諦めて，これまで必死に計算してきた理論を捨てることになります．
+>
+>LTIであるからこそ，畳み込みとして扱うことができ，高速な計算が可能だったのです．  
+>そのため，パラメータを時間依存させるということは，畳み込みを諦めて，これまで導出した理論を捨てることになります．  
 >Mambaの技術的な貢献とは，LTIという制約を取り除いた上で効率的な計算を可能にしたところにあります．
 
-## 選択的メカニズム
+## 9.2. 選択的メカニズム
 前述したとおり，Mambaでは行列（$A,B,C,D$）を時間依存（入力依存）にします．
+
 これをSelective Structured State Space Sequence model (S6) といいます．
-Sの数が違うので本名が違うかもしれませんが，Selectiveがポイントなのは確かです．
+
+Sの数が違うので本名が違うかもしれませんが，Selectiveがポイントなのは確かです．  
 そしてアルゴリズムは以下の通りです．
 
-<section style="text-align: center;">
+<center><img src="images/mamba/algorithm.png" width="100%"></center>
 
-![](images/mamba/algorithm.png)
-
-</section>
-
-- B:バッチサイズ，L:系列長，D:入力次元（特徴量数），N:隠れ次元数
+- B : バッチサイズ，L : 系列長，D : 入力次元（特徴量数），N : 隠れ次元数
 - $s_B(x),s_C(x)=\text{Linear}_N(x)$
 - $s_\Delta(x)=\text{Broadcast}_D(\text{Linear}_1(x))$
 - $\tau_\Delta=\text{softplus}$ （活性化関数）
 
-S4とは違い，行列が入力に依存していることが分かります．
-$A$ についても，離散化パラメータ $\Delta$ を介して入力に依存しています．
+S4とは違い，行列が入力に依存していることが分かります．  
+$A$ は直接的には入力に依存していないように見えますが，離散化パラメータ $\Delta$ を介して入力に依存しています．  
 $B,C$ には，$D\rightarrow N$ の線形変換が施されています．
 
-こんな単純な変換で情報の選択ができるのか？と思ってしまいますが．ちゃんとできるんです．
+こんな単純な変換で情報の選択ができるのか？と思ってしまいますが，ちゃんとできるんです．
 
-Mambaでは，状態空間モデルをゼロ次ホールドという方法で離散化します．
+Mambaでは，状態空間モデルをゼロ次ホールドという方法で離散化します．  
 Mambaに合わせて表記が若干変わっている点に注意してください．
 
 $$
 \begin{align*}
 h_{t} &= \bar{A}_th_{t-1} + \bar{B}_tx_{t} \\
-y_t &= C_th_t + D_tx_t
-\end{align*}\\
-\bar{A} = \exp(\Delta A) \\
-\bar{B} = (\Delta A)^{-1}(\exp(\Delta A) - I)\Delta B
+y_t &= C_th_t + D_tx_t \\
+\bar{A} &= \exp(\Delta A) \\
+\bar{B} &= (\Delta A)^{-1}(\exp(\Delta A) - I)\Delta B
+\end{align*}\tag{54}
 $$
 
 このとき選択的メカニズムはゲート機構になります．
@@ -2382,11 +2361,11 @@ $$
 
 ---
 
-よって，選択的メカニズムはシグモイド関数によるゲート機構を含んだより一般的な機構になります．
+定理1より，選択的メカニズムはシグモイド関数によるゲート機構を含んだより一般的な機構になります．
 
 これにより，入力の重要度に応じて記憶することができるようになりました．
 
-さらに，文の切れ目で記憶をリセットすることが可能になります．
+さらに，文の切れ目で記憶をリセットすることが可能になります．（$g_t=1$）  
 これはTransformerでは，特別なトークンを差し込むことでこれを達成していましたが，Mambaでは自動的に行ってくれます．
 
 定理1より，各パラメータの解釈は以下のようになります．
@@ -2401,65 +2380,50 @@ $$
   - $B$ によって，状態に入力をどれだけ含めるかを制御します．
   - $C$ によって，出力に状態をどれだけ含めるかを制御します．
 
-## 効率的な計算アルゴリズム
+## 9.3. 効率的な計算アルゴリズム
 効率的な計算については，実は大きな新規性はありません．
 次の3つの手法によって高速化を図ります．
 - parallel scan
 - kernel fusion
 - activationの再計算
 
-### parallel scan
+### 9.3.1. parallel scan
 parallel scanとは，累積和を並列に計算するためのアルゴリズムです．
 
 以下の図のように累積和の計算とSSMの再帰計算にはシナジーがあります．
 
-<section style="text-align: center;">
+<center><img src="images/mamba/scan-ssm.png" width="80%"></center>
 
-![](images/mamba/scan-ssm.png)
-
-</section>
-
-そのため，parallel scanをそのまま流用すれば，SSMの再帰計算を一部並列計算することができます．（このアイデア自体も新しいものではない）
-
+そのため，parallel scanをそのまま流用すれば，SSMの再帰計算を一部並列計算することができます．（このアイデア自体も新しいものではない）  
 parallel scanは，二分木上で総和を計算していきますが，同じ階層のノードは並列計算可能であることを利用しています．
 
 parallel scanの詳細については以下の資料を参照してください．
 
 https://www.cs.princeton.edu/courses/archive/fall20/cos326/lec/21-02-parallel-prefix-scan.pdf
 
-### kernel fusion・activationの再計算
-モデルの学習・推論のボトルネックは，データを大容量・低速なHBMと小容量・高速なSRAM間で移動させる部分にあります．
-
+### 9.3.2. kernel fusion・activationの再計算
+モデルの学習・推論のボトルネックは，データを大容量・低速なHBMと小容量・高速なSRAM間で移動させる部分にあります．  
 そのためMambaでは，この移動を最小限に抑えるためにkernel fusion・activationの再計算という工夫を行っています．
 
-kernel fusionは一般的な技術であり，複数の計算カーネルを1つにまとめることで効率化する手法のようです．
-
-activationの再計算は，本来勾配の計算に必要なactivationを保持するのではなく，逐一計算しなおすというものです．
-
+kernel fusionは一般的な技術であり，複数の計算カーネルを1つにまとめることで効率化する手法のようです．  
+activationの再計算は，本来勾配の計算に必要なactivationを保持するのではなく，逐一計算しなおすというものです．  
 activationを保持するとHBMへ保存する必要が出てきてしまうため，より遅くなってしまうようです．
 
 ここまで読めば，冒頭のMambaの図が理解できるようになったと思います．
 
-## アーキテクチャ
-Mambaのアーキテクチャは以下のようになります．
+## 9.4. アーキテクチャ
+Mambaは以下のようなアーキテクチャです．
 
 H3を活かしつつもH3よりもシンプルなアーキテクチャです．
 
-<section style="text-align: center;">
+<center><img src="images/mamba/arch.png" width="80%"></center>
 
-![](images/mamba/arch.png)
+## 9.5. 実験結果
+まずは，冒頭で触れたS4の問題点が解消されたかどうかを見てみます．  
 
-</section>
-
-## 実験結果
-まずは，冒頭で触れたS4の問題点が解消されたかどうかを見てみます．
-
-どちらのタスクにおいても解消されていることが分かりますが，注目するべきは右図です．
-
-これは外挿にどれだけ強いかを実験した結果です．
-
-縦の点線が学習で用いた入力の長さ（=256）を表しており，色のついた実線が推論における入力の長さと精度の関係を表しています．
-
+どちらのタスクにおいても解消されていることが分かりますが，注目するべきは右図です．  
+これは外挿にどれだけ強いかを実験した結果です．  
+縦の点線が学習で用いた入力の長さ（=256）を表しており，色のついた実線が推論における入力の長さと精度の関係を表しています．  
 多くのモデルが学習した長さを超えると精度が低下する一方で，Mambaは少なくとも100万の長さでも精度が低下していません．
 
 なぜですかね？
@@ -2523,7 +2487,7 @@ H3を活かしつつもH3よりもシンプルなアーキテクチャです．
 >
 >Mambaをはじめとする研究の流行に刺激されたのでしょうか？
 
-# Mamba 2
+# 10. Mamba 2
 前節にて，ついにMambaの全容を捉えたわけですが，正直S4ほどの感動はないですよね．
 そこまで意外ではないアイデアを出して，失われた効率性を既存の工夫によってなんとか補っている状態．（言い過ぎ）
 
@@ -2536,7 +2500,7 @@ MambaをはじめとするSSMは，計算量的にはTransformerよりも軽い�
 
 それでは，SSMとTransformerの関係性を見ていきましょう．
 
-## SSMと構造化行列
+## 10.1. SSMと構造化行列
 改めてMambaの式を書いておきます．
 $$
 \begin{align*}
@@ -2678,7 +2642,7 @@ $$
 y = (L \odot (CB^\top)) x
 $$
 
-## Linear Attentionと構造化行列
+## 10.2. Linear Attentionと構造化行列
 Linear Attentionは，H3でも説明しましたが，改めて式を示します．
 
 Attentionの計算は次のように表せます．
@@ -2738,7 +2702,7 @@ $$
 
 </section>
 
-## State Space Duality
+## 10.3. State Space Duality
 ここまでで，SSMとLinear Attentionが全く同じ式で表現できることが分かりました．
 
 ただし条件として
@@ -2757,7 +2721,7 @@ $$
 
 </section>
 
-## 効率的な計算アルゴリズム
+## 10.4. 効率的な計算アルゴリズム
 SSDは，Linear Attentionを含む行列積の形で表されるため，既にGPUフレンドリーな計算を行うことができます．
 
 しかしここでは，より効率的な計算について考えます．
@@ -2793,7 +2757,7 @@ $$
 
 </section>
 
-### 対角ブロック
+### 10.4.1. 対角ブロック
 対角ブロックは $\frac{T}{Q}$ 個の $Q\times Q$ の小さな1-SS行列になっています．
 $i$ 番目のブロックに注目すると，
 $$
@@ -2826,7 +2790,7 @@ Mambaでは，入力は1次元を考えていましたが，Mamba 2では，$P$ 
 
 となります．
 
-### 非対角ブロック
+### 10.4.2. 非対角ブロック
 次のブロックを例に考えてみます．
 非対角ブロックは，3つに分解されます．
 $$
@@ -2884,7 +2848,7 @@ $C^\top A$ は，$\mathbb{R}^{1\times N}\times\mathbb{R}^{N\times N}$ の計算�
 >1-SSのための効率的なアルゴリズムとして論文内では5つほど紹介されています．
 >どの手法も $O(T),O(T\log T)$ 程のようです．
 
-## アルゴリズムの解釈
+## 10.5. アルゴリズムの解釈
 対角ブロックや非対角ブロックの左・中央・右部分がどのような意味を持っているのかについて考えます．
 対角ブロックについては，入力と出力が直接結びついているので，非対角ブロックについて考えます．
 
@@ -2925,7 +2889,7 @@ $$
 
 </section>
 
-## モデルアーキテクチャ
+## 10.6. モデルアーキテクチャ
 Mamba 2のモデルアーキテクチャを以下に示します．
 
 Mambaからの大きな変更はありませんが，MambaではSSMブロックを $X\mapsto Y$ として捉えていたところを，Transformerとの関連を示すために，$A,X,B,C\mapsto Y$ というように明示します．
@@ -2942,7 +2906,7 @@ TransformerとMambaの関連性が示されたことでマルチヘッドアテ�
 入力の次元を $P$ としていましたが，これをヘッドの次元として，$P=64,128$ くらいで固定します．
 もし隠れ次元として256次元ある場合は，$P=64$ のヘッドを4つ用意することになります．
 
-## 実験結果
+## 10.7. 実験結果
 まずは言語性能に関する実験結果です．
 Mambaよりもさらに性能が上がっています．
 
@@ -2985,7 +2949,7 @@ Scanに比べてさらに速度が上がっています．
 >Mamba 2の実験結果から分かるように，MambaとTransformerを組み合わせるという方向性が今の流れのようです．
 >実際にJambaやZambaといったハイブリッド手法が提案されています．
 
-# 全体のまとめ
+# 11. 全体のまとめ
 - HiPPOは，長期依存を捉えるための効率的な記憶方法を提案しました．
 - LSSLは，HiPPOによって効率的な記憶ができるようになった線形RNNを1つのモジュール（層）として扱えるようにしました．
   さらに，このモジュールは学習は並列計算可能な畳み込みとして，推論は効率的な再帰計算としてふるまうことができます．
@@ -2995,7 +2959,7 @@ Scanに比べてさらに速度が上がっています．
   効率的な計算を行うことで，計算速度の低下を補いました．
 - Mamba 2は，MambaとTransformerの関連性を示して，Mambaの解釈性や計算効率向上を行いました．
 
-# Mamba vs Transformer
+# 12. Mamba vs Transformer
 あくまで個人の見解ですが，mambaがTransformerの完全な代替になることはないと思います．
 MambaはRNNであり（？），どんなに長い系列も固定長のベクトルに押し込んでしまいます．
 しかしTransformerは，Attention機構によってどんな系列についても1トークンずつベクトルとして扱います．
