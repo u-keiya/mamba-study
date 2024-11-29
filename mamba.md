@@ -143,6 +143,16 @@ RNNとの大きな違いは，RNNが1つ前の状態を見るのに対して，T
 <center><img src="images/transformer.png" width="60%"></center>
 
 # 4. LMU (Legendre Memory Unit)
+```
+@inproceedings{voelker2019lmu,
+  title={Legendre Memory Units: Continuous-Time Representation in Recurrent Neural Networks},
+  author={Aaron R. Voelker and Ivana Kaji\'c and Chris Eliasmith},
+  booktitle={Advances in Neural Information Processing Systems},
+  pages={15544--15553},
+  year={2019}
+}
+```
+
 LMUは連続的な信号を扱うために提案されたRNNの一種です．  
 通常扱われるデータは，あるサンプリング周波数の計測機器によって計測された離散的なデータですが，私たちの脳は世界からの連続的な信号を扱っています．（もしかしたらサンプリングしているのかもしれないが...）  
 そこで，連続的な信号についても扱えるようにしてみようというものです．
@@ -266,6 +276,17 @@ $$
 そこさえ理解していただければ，次のHiPPOに進むことができます．
 
 # 5. HiPPO (Higher-order Polynomial Projection Operations)
+```
+@article{gu2020hippo,
+  title={Hippo: Recurrent memory with optimal polynomial projections},
+  author={Gu, Albert and Dao, Tri and Ermon, Stefano and Rudra, Atri and R{\'e}, Christopher},
+  journal={Advances in neural information processing systems},
+  volume={33},
+  pages={1474--1487},
+  year={2020}
+}
+```
+
 HiPPOはLMUを一般化したものです．  
 近似に用いる多項式をルジャンドル多項式に限らずに，係数 $c_n$ の更新式を導きます．
 
@@ -1188,6 +1209,17 @@ HiPPO-LegSは処理速度が速く，LSTMに比べて入力信号の近似精度
 
 
 # 6. LSSL (Linear State-Space Layers)
+```
+@article{gu2021combining,
+  title={Combining recurrent, convolutional, and continuous-time models with linear state space layers},
+  author={Gu, Albert and Johnson, Isys and Goel, Karan and Saab, Khaled and Dao, Tri and Rudra, Atri and R{\'e}, Christopher},
+  journal={Advances in neural information processing systems},
+  volume={34},
+  pages={572--585},
+  year={2021}
+}
+```
+
 HiPPOは記憶に関する手法でした．  
 HiPPOを用いることで長期的な記憶が可能になり，RNNの記憶セル部分にHiPPOを導入するだけで精度が改善しました．
 
@@ -1410,6 +1442,15 @@ HiPPOでは，行列を固定して扱っていました．
 これを解決したのが次に紹介するS4になります．
 
 # 7. S4 (Structured State Space Sequence model)
+```
+@inproceedings{gu2022efficiently,
+  title={Efficiently Modeling Long Sequences with Structured State Spaces},
+  author={Gu, Albert and Goel, Karan and R\'e, Christopher},
+  booktitle={The International Conference on Learning Representations ({ICLR})},
+  year={2022}
+}
+```
+
 前述したとおり，S4はLSSLにおける2つの課題を華麗に解決した手法です．
 
 LSSLでは，HiPPOの一般的なクラスを求めることでHiPPO行列の学習を行っていました．  
@@ -2132,6 +2173,15 @@ https://ai-scholar.tech/articles/time-series/FiLM
 誰か検証して...
 
 # 8. H3 (Hungry Hungry HiPPOs)
+```
+@inproceedings{fu2023hungry,
+title={Hungry Hungry Hippos: Towards Language Modeling with State Space Models},
+author={Daniel Y Fu and Tri Dao and Khaled Kamal Saab and Armin W Thomas and Atri Rudra and Christopher Re},
+booktitle={The Eleventh International Conference on Learning Representations },
+year={2023}
+}
+```
+
 ## 8.1. S4の弱点
 S4というとても素晴らしい手法が提案されたわけですが，そんなS4にも弱点があります．  
 まずは，H3の位置づけについてまとめられた以下の図を見てください．
@@ -2262,6 +2312,15 @@ Hybridとなっているのは，H3層とAttention層を混ぜているからで
 
 
 # 9. Mamba
+```
+@article{mamba,
+  title={Mamba: Linear-Time Sequence Modeling with Selective State Spaces},
+  author={Gu, Albert and Dao, Tri},
+  journal={arXiv preprint arXiv:2312.00752},
+  year={2023}
+}
+```
+
 非常に長い道のりでしたが，いよいよMambaを紹介します．
 ここまでついてきたならば，Mambaの内容は意外とあっさりに感じるかもしれません．
 
@@ -2495,6 +2554,15 @@ H3を活かしつつもH3よりもシンプルなアーキテクチャです．
 ></details>
 
 # 10. Mamba 2
+```
+@inproceedings{mamba2,
+  title={Transformers are {SSM}s: Generalized Models and Efficient Algorithms Through Structured State Space Duality},
+  author={Dao, Tri and Gu, Albert},
+  booktitle={International Conference on Machine Learning (ICML)},
+  year={2024}
+}
+```
+
 前節にて，ついにMambaの全容を捉えたわけですが，正直S4ほどの感動はないですよね．  
 そこまで意外ではないアイデアを出して，失われた効率性を既存の工夫によってなんとか補っている状態．（言い過ぎ）
 
