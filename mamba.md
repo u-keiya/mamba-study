@@ -75,11 +75,15 @@
   - [10.4. 効率的な計算アルゴリズム](#104-効率的な計算アルゴリズム)
     - [10.4.1. 対角ブロック](#1041-対角ブロック)
     - [10.4.2. 非対角ブロック](#1042-非対角ブロック)
+      - [10.4.2.1. 左部分](#10421-左部分)
+      - [10.4.2.2. 中央部分](#10422-中央部分)
+      - [10.4.2.3. 右部分](#10423-右部分)
+      - [10.4.2.4. 非対角ブロックの計算量](#10424-非対角ブロックの計算量)
+    - [10.4.3. 全体の計算量](#1043-全体の計算量)
   - [10.5. アルゴリズムの解釈](#105-アルゴリズムの解釈)
   - [10.6. モデルアーキテクチャ](#106-モデルアーキテクチャ)
   - [10.7. 実験結果](#107-実験結果)
 - [11. 全体のまとめ](#11-全体のまとめ)
-- [12. Mamba vs Transformer](#12-mamba-vs-transformer)
 
 </details>
 
@@ -120,16 +124,12 @@ RNN（Recurrent Neural Network）とは，時系列データや言語などの�
 通常のニューラルネットワークは，入力情報を中間層でごちゃ混ぜにしてしまうので，時系列を考慮することができません．  
 再帰構造によって，前の情報を次へと渡すことができるようになります．
 
----
-
 <center><img src="images/rnn.png" width="60%"></center>
 
 ## 3.2. LSTM
 LSTM（Long Short-Term Memory）とは，RNNに記憶セル $c$ を付けることで長期記憶できるように改良した手法です．  
 忘却ゲート，入力ゲート，出力ゲートの3つのゲートを持ち，入力情報をどの程度記憶セルに反映させるかを動的に決定することができます．  
 3つのシグモイド関数 $\sigma$ がこの決定を司っています．
-
----
 
 <center><img src="images/lstm.png" width="60%"></center>
 
@@ -139,8 +139,6 @@ Transformerは，Attentionという機構を持ったニューラルネットワ
 かなり正確性に欠けますが，図にすると次のような感じです．  
 RNNとの大きな違いは，RNNが1つ前の状態を見るのに対して，Transformerでは過去全ての状態を見ます．  
 そのため，Transformerは情報を圧縮することなく扱うことができ，高い性能を発揮しています．（しかも早い）
-
----
 
 <center><img src="images/transformer.png" width="60%"></center>
 
@@ -153,8 +151,6 @@ LMUは連続的な信号を扱うために提案されたRNNの一種です．
 そのため，いかに入力情報を圧縮するかが連続信号を扱う上で重要になります．  
 LMUは，**入力信号をルジャンドル多項式によって近似**することで情報を圧縮します．  
 これにより効率的にデータを記憶することができ，長期的な依存関係を学習することができます．
-
----
 
 <center><img src="images/lmu/result1.png" width="30%"></center>
 
@@ -190,8 +186,6 @@ $$
 図示するとこんな感じです．
 ルジャンドル多項式は区間 $[-1,1]$ に対して定義されています．
 
----
-
 <center><img src="images/lmu/legendre_polynomials.png" width="60%"></center>
 
 ---
@@ -220,8 +214,6 @@ $f(x)$ をルジャンドル多項式の線形和によって表現し，その�
 こんなのでちゃんと近似できるのかと思いましたが，しっかり近似できるようです．  
 以下は，$f(x)=\sin(\pi x) + \sin(2\pi x) + \sin(3\pi x)$ を近似した様子です．  
 $N$ （ルジャンドル多項式の数）が大きくなるほど，近似の精度が高いことが分かります．
-
----
 
 <center><img src="images/lmu/legendre_approx.png" width="50%"></center>
 
@@ -319,6 +311,8 @@ HiPPOの本質は入力を圧縮した表現を獲得することなので，近
 >
 ><center><img src="images/balls.png" width="30%"></center>
 >
+>---
+>
 >大きさを比べるとなると，直径や表面積，体積など色々ありますが，今回は全く同じ大きさの球なのでいずれも同じになりますね．  
 >しかし質量で比較した場合はどうでしょう？  
 >当然鉄球の方が重いですよね．
@@ -327,6 +321,8 @@ HiPPOの本質は入力を圧縮した表現を獲得することなので，近
 >これを2次元空間で考えてみます．（3次元でもいいです．）
 >
 ><center><img src="images/circles.png" width="40%"></center>
+>
+>---
 >
 >この空間で質量を求めるにはどうしたらいいでしょうか？
 >**密度**をどのようにして取り入れたらいいでしょうか？
@@ -337,6 +333,8 @@ HiPPOの本質は入力を圧縮した表現を獲得することなので，近
 >もし空間内の「濃さ」が下図のようになっていたら．鉄球の方が重いということのイメージも付きやすいですよね．
 >
 ><center><img src="images/circles_heat.png" width="40%"></center>
+>
+>---
 >
 >実際この先，測度 $\mu$ に対して
 >$$\tag{9}
@@ -938,6 +936,8 @@ HiPPO-LegTでは，区間 $[t-\theta,t]$ を定義域としていました．
 
 <center><img src="images/hippo/diff_method.png" width="100%"></center>
 
+---
+
 HiPPO-LegTはウィンドウの外の信号は忘れてしまいますが，HiPPO-LegSでは忘れることはありません．  
 単純ですが，そのように考えるとこちらの方が上手くいきそうな予感があります．  
 ちなみに，ラゲール多項式は直近のデータを重要視するものになります．
@@ -1158,6 +1158,8 @@ $\Delta t$ がすべて消えました．
 
 <center><img src="images/hippo/arch.png" width="70%"></center>
 
+---
+
 HiPPOは記憶の更新に関する手法なので，RNNの記憶セルの更新部に組み込めます．  
 これを用いて，2つのベンチマークテストを行っています．
 
@@ -1169,11 +1171,15 @@ HiPPOは記憶の更新に関する手法なので，RNNの記憶セルの更新
 
 <center><img src="images/hippo/res_pmnist.png" width="50%"></center>
 
+---
+
 2つ目は，Character Trajectory classificationです．  
 これは，文字を書くときの2次元座標情報から文字を分類するタスクになります．  
 このタスクでは，あえてサンプリングレートを変えることで，時間スケールへの頑健さをアピールしています．
 
 <center><img src="images/hippo/res_char.png" width="90%"></center>
+
+---
 
 最後に処理速度と入力信号の近似精度の話です．  
 HiPPO-LegSは処理速度が速く，LSTMに比べて入力信号の近似精度がダントツです．
@@ -2072,6 +2078,8 @@ S4レイヤーは，$\mathbb{R}^L\rightarrow\mathbb{R}^L$ というように1次
 
 <center><img src="images/s4/res1.png" width="70%"></center>
 
+---
+
 PATH-Xというのは，左の図のように2つの点が点線で繋がれているかを当てるベンチマークです．  
 2d-convは使用不可であり，1次元のベクトルにして入力されます．
 右の図は学習されたカーネルになります．
@@ -2130,6 +2138,8 @@ S4というとても素晴らしい手法が提案されたわけですが，そ
 
 <center><img src="images/h3/about.png" width="80%"></center>
 
+---
+
 S4の右下部分にTransformerモデルとの比較が簡単に載っています．
 
 この記述から，S4はTransformerに比べて計算時間と自然言語処理分野が劣っていることが分かります．  
@@ -2150,12 +2160,11 @@ H3ではこの問題について，2つの簡単なタスクを解かせるこ�
   
   セットになっているアルファベットと数字の組に対して，与えられたアルファベットに対応する数字を出力するタスク
 
-これらの簡単にタスクに対して，以下のような結果が得られます．
-
-<center><img src="images/h3/nlptask_res.png" width="70%"></center>
-
+これらの簡単にタスクに対して，以下のような結果が得られます．  
 Attentionは完璧に解くことができますが，S4はなどの状態空間モデルは正確に解くことができません．  
 このような自然言語処理に対する弱みを改善したのがH3です．
+
+<center><img src="images/h3/nlptask_res.png" width="70%"></center>
 
 ## 8.2. Attention-Likeな構造
 Induction HeadとAssociative Recallの結果から分かったことは，状態空間モデルはトークン同士を比較することができないことです．  
@@ -2163,12 +2172,11 @@ S4の基礎になっているHiPPOは，入力系列を直交多項式で近似�
 一方でAttentionは，QKVを用いて直接的に類似度を計算しているので，トークン同士の比較は大得意です．
 
 そこで，Attentionっぽい構造を取り入れたのがH3です．
-H3は以下のような構造をしています．
-
-<center><img src="images/h3/arch.png" width="50%"></center>
-
+H3は以下のような構造をしています．  
 QKVをそのまま取り入れているのでほぼAttentionですね．
 KVを先に計算しているのは，Linear Attentionを参考にしているからです．
+
+<center><img src="images/h3/arch.png" width="50%"></center>
 
 >[!NOTE]
 ><details>
@@ -2186,6 +2194,8 @@ KVを先に計算しているのは，Linear Attentionを参考にしている�
 >$$
 >これにより，Attentionの計算時間を大幅に短縮することができます．
 ></details>
+
+---
 
 - Shift SSM
 
@@ -2241,6 +2251,8 @@ Hybridとなっているのは，H3層とAttention層を混ぜているからで
 どうやらH3層だけでは勝てないらしい...
 
 <center><img src="images/h3/res1.png" width="80%"></center>
+
+---
 
 速度もTransformerに勝っています．  
 以下は単位時間あたりに出力可能なトークン数を比較したものです．  
@@ -2394,6 +2406,8 @@ parallel scanとは，累積和を並列に計算するためのアルゴリズ�
 
 <center><img src="images/mamba/scan-ssm.png" width="80%"></center>
 
+---
+
 そのため，parallel scanをそのまま流用すれば，SSMの再帰計算を一部並列計算することができます．（このアイデア自体も新しいものではない）  
 parallel scanは，二分木上で総和を計算していきますが，同じ階層のノードは並列計算可能であることを利用しています．
 
@@ -2428,85 +2442,79 @@ H3を活かしつつもH3よりもシンプルなアーキテクチャです．
 
 なぜですかね？
 
-<section style="text-align: center;">
+<center><img src="images/mamba/res2.png" width="90%"></center>
 
-![](images/mamba/res2.png)
-
-</section>
+---
 
 次に言語タスクの性能です．
 
 スケーリング則が見られる上に，同程度のサイズのTransformerモデルより性能が高いことが分かります．
 
-<section style="text-align: center;">
+<center><img src="images/mamba/res3.png" width="90%"></center>
 
-![](images/mamba/res3.png)
+<center><img src="images/mamba/res4.png" width="90%"></center>
 
-</section>
-
-<section style="text-align: center;">
-
-![](images/mamba/res4.png)
-
-</section>
+---
 
 最後に速度とメモリについてです．
 
 思ったより速いですね．
 特に大きなバッチサイズで顕著な差が出ます．
 
-<section style="text-align: center;">
-
-![](images/mamba/res5.png)
-
-</section>
+<center><img src="images/mamba/res5.png" width="90%"></center>
 
 >[!NOTE]
 >### MambaがRejectされた原因
+><details>
+>
 >MambaはICLR 2024 でRejectされています．
->これは，評価方法に疑問が持たれたからだそうです．
->まず，これまで学術的価値の大部分を占めていたLong Range Arenaにおける評価がありません．
->次に，生成文の精度をPerplexity（文の自然さ）でしか評価しておらず，MT-Benchなどの主要なベンチマークテストを行っていません．
+>これは，評価方法に疑問が持たれたからだそうです．  
+>まず，これまで学術的価値の大部分を占めていたLong Range Arenaにおける評価がありません．  
+>次に，生成文の精度をPerplexity（文の自然さ）でしか評価しておらず，MT-Benchなどの主要なベンチマークテストを行っていません．  
 >このあたりが原因のようです．
+></details>
 
 >[!NOTE]
 >### MambaとRNN(LSTM)との違いは何か？
+><details>
+>
 >MambaはLSTMと非常に似ているなと個人的に思いました．
 >そもそも再帰構造ですし，ゲートメカニズムもありますし．
 >
 >もちろん，MambaはRNNを1つのモジュールとして保持していますし，ゲートメカニズムについてもより一般的なメカニズムを持っています．
 >しかしこれらはLSTMでも達成可能なような気がしなくもないです．
 >
->決定的な違いは何ですかね？
+>決定的な違いは何だろう？と思いました．
 >
->これについて，著者のGu氏はインタビュー（https://www.youtube.com/watch?v=1zjMalKLHiA ）にて，LSTMなどの従来のRNNは非線形性を含めすぎたあまり，学習が上手く進まなかったという発言をしているそうです．
->LSTMはtanhなどを使って記憶の更新を行う一方，MambaなどのSSMでは行列積によって記憶の更新を行います．
+>これについて，著者のGu氏はインタビュー（https://www.youtube.com/watch?v=1zjMalKLHiA ）にて，LSTMなどの従来のRNNは非線形性を含めすぎたあまり，学習が上手く進まなかったという発言をしているそうです．  
+>LSTMはtanhなどを使って記憶の更新を行う一方，MambaなどのSSMでは行列積によって記憶の更新を行います．  
 >これが大きな違いの一つのようです．
 >
->なお，LSTMの著者がxLSTMなるものを開発しました．https://arxiv.org/abs/2405.04517
->
+>ちなみに，LSTMの著者がxLSTMなるものを開発しました．https://arxiv.org/abs/2405.04517  
 >Mambaをはじめとする研究の流行に刺激されたのでしょうか？
+></details>
 
 # 10. Mamba 2
-前節にて，ついにMambaの全容を捉えたわけですが，正直S4ほどの感動はないですよね．
+前節にて，ついにMambaの全容を捉えたわけですが，正直S4ほどの感動はないですよね．  
 そこまで意外ではないアイデアを出して，失われた効率性を既存の工夫によってなんとか補っている状態．（言い過ぎ）
 
-しかし，Mambaはここでは終わらず，より理論的な発展をします．
+しかし，Mambaはここでは終わらず，より理論的な発展をします．  
 Mamba 2の論文のタイトルは「Transformers are SSMs: Generalized Models and Efficient Algorithms Through Structured State Space Duality」といい，Transformerの変種がSSMと等価であることを示していきます．
 
-なぜTransformerとの等価性を示すのかというと，TransformerとGPUの相性がいいからです．
-MambaをはじめとするSSMは，計算量的にはTransformerよりも軽いですが，実践上だとTranformerの方が速かったりします．
+なぜTransformerとの等価性を示すのかというと，TransformerとGPUの相性がいいからです．  
+MambaをはじめとするSSMは，計算量的にはTransformerよりも軽いですが，実践上だとTranformerの方が速かったりします．  
 そこで，MambaをTransformerの計算と同じと捉えてあげることで，高速な行列演算や並列計算の恩恵を受けられるということです．
 
 それでは，SSMとTransformerの関係性を見ていきましょう．
 
 ## 10.1. SSMと構造化行列
 改めてMambaの式を書いておきます．
+
 $$
 \begin{align*}
 h_{t} &= \bar{A}_th_{t-1} + \bar{B}_tx_{t} \\
 y_t &= C^\top_th_t + D_tx_t
-\end{align*}
+\end{align*}\tag{54}
 $$
 
 このMambaの式を再帰計算をほどいて書いてみます．
@@ -2514,12 +2522,12 @@ $$
 \begin{align*}
 h_{t} &= \bar{A}_t...\bar{A}_1\bar{B}_0x_0 + \bar{A}_t...\bar{A}_2\bar{B}_1x_1 + \dots + \bar{A}_t\bar{A}_{t-1}\bar{B}_{t-2}x_{t-2} + \bar{A}_t\bar{B}_{t-1}x_{t-1} + \bar{B}_tx_t \\
 &= \sum_{s=0}^t \left( \prod_{i=s+1}^t \bar{A}_i \right) \bar{B}_sx_s
-\end{align*}
+\end{align*}\tag{55}
 $$
 
 これを $y$ の式に代入します．
 通常 $D=0$ なので，それを考慮すると
-$$
+$$\tag{56}
 y_t = \sum_{s=0}^t C_t^\top \left( \prod_{i=s+1}^t \bar{A}_i \right) \bar{B}_sx_s
 $$
 
@@ -2528,7 +2536,7 @@ $$
 \begin{align*}
 y &= Mx \\
 M_{ji} &:= C^\top_j \bar{A}_j ... \bar{A}_{i+1} \bar{B}_i
-\end{align*}
+\end{align*}\tag{57}
 $$
 
 行列形式で表すと次のような感じです．
@@ -2549,15 +2557,15 @@ $$
 
 >[!NOTE]
 >### 構造化行列とは？
->構造化行列（structured matrix）とは，特定の構造や性質を持つ行列のことをいいます．
->構造や性質を利用することで，計算効率を向上させたり，メモリの使用量を削減したりすることができます．
+>構造化行列（structured matrix）とは，特定の構造や性質を持つ行列のことをいいます．  
+>構造や性質を利用することで，計算効率を向上させたり，メモリの使用量を削減したりすることができます．  
 >構造化行列の例としては，対角行列やトーピッツ行列，コーシー行列などがあります．
 >コーシー行列は，S4でも登場しており，計算効率を高めるために一役買っていました．
 
 ---
 **定義3.1** : 半分離可能（semiseparable, SS）
 
-（下三角）行列 $M$ が $N$-半分離可能 であるとは，行列の下三角部分のすべての部分行列のランクが最大で $N$ であることをいう．
+（下三角）行列 $M$ が $N$-半分離可能 であるとは，行列の下三角部分のすべての部分行列のランクが最大で $N$ であることをいう．  
 ここで，$N$ を半分離可能行列の次数またはランクと呼ぶ．
 
 ---
@@ -2601,25 +2609,26 @@ $A$ は $N\times N$ の行列であるため，この部分行列のランクは
 
 ---
 
-定義3.2より，SSMの式はSSS行列と入力の積と見なすことができます．
-そして，補題3.3および命題3.4から，SSSとSSは等価であることが示されました．
+定義3.2より，SSMの式はSSS行列と入力の積と見なすことができます．  
+そして，補題3.3および命題3.4から，SSSとSSは等価であることが示されました．  
 したがって，SSMの式はSS行列と入力の積と考えることができます．
 
-<section style="text-align: center;">
+<center><img src="images/mamba2/ssm-ss.png" width="80%"></center>
 
-![](images/mamba2/ssm-ss.png)
+---
 
-</section>
+SSMの式が構造化行列の積で表されることが分かったことで，SSMの計算に非常に効率的な計算アルゴリズムが適用できます．
 
-SSMの式が構造化行列の積で表されることが分かったことで，SSMの計算に非常に効率的な計算アルゴリズムが適用できるようになりました．
+最後にもう少しだけ変形します．
 
-最後に少し強めの仮定ですが，$\bar{A}_t = a_t I$ という関係が成り立つとします．
+少し強めの仮定ですが，$\bar{A}_t = a_t I$ という関係が成り立つとします．  
 S4Dより，$A$ が対角行列であることは問題ないのですが，そのすべての要素が同じというのは強めの仮定だと思います．
 
 この仮定の上では $M_{ji}$ は，
 $$
 M_{ji} = a_j ... a_{i+1} C^\top_j B_i
 $$
+
 と変形できるので，
 $$
 \begin{align*}
@@ -2632,13 +2641,13 @@ a_2 a_1& a_2 & 1 & \cdots & 0 \\
 \vdots & \vdots & \vdots & \ddots & \vdots \\
 a_{T-1} a_{T-2} ... a_1 & a_{T-1} a_{T-2} ... a_2 & a_{T-1} a_{T-2} ... a_3 & \cdots & 1 \\
 \end{bmatrix}
-\end{align*}
+\end{align*}\tag{58}
 $$
 
 ここで，$L$ は1-SS行列になっています．
 
 以上を踏まえると，SSMの式は以下のようになります．
-$$
+$$\tag{59}
 y = (L \odot (CB^\top)) x
 $$
 
@@ -2649,11 +2658,13 @@ Attentionの計算は次のように表せます．
 $$
 O_i = \frac{\sum_{j=1}^i \text{Sim}(Q_i, K_j) V_j}{\sum_{j=1}^i \text{Sim}(Q_i, K_j)} \in \mathbb{R}^d
 $$
+
 通常の計算では，$\text{Sim}(q, k)=e^{q^\top k}$ となりますが，Linear Attentionでは，類似度を計算する部分が $\text{Sim}(q, k)=\phi(q)^\top\phi(k)$ で表せると仮定します．
 そうすることで，Attentionの計算は次のように書き直すことができます．
 $$
 O_i = \frac{\phi(Q_i)^\top \sum_{j=1}^i \phi(K_j) V_j^\top}{\phi(Q_i)^\top \sum_{j=1}^i \phi(K_j)}
 $$
+
 これにより，Attentionの計算時間を大幅に短縮することができます．
 
 >[!NOTE]
@@ -2667,6 +2678,8 @@ $$
 >- cosFormer : $x \mapsto (x\cos(\pi t/2T),\sin(\pi t/2T))$
 ></details>
 
+---
+
 ここで，分母の計算等を無視すると，
 $$
 y = QK^\top V
@@ -2674,11 +2687,12 @@ $$
 と書くことができます．
 （$Q,K$ に対しては，カーネルを適用済みとします．）
 
-また，多くの場合，Masked Attentionといって，未来の情報を推論に使えないようにする仕組みが備わっています．
+また，多くの場合，Masked Attentionといって，未来の情報を推論に使えないようにする仕組みが備わっています．  
 このmaskを $L$ とすると，
-$$
+$$\tag{60}
 y = (L \odot QK^\top) V
 $$
+
 という形になります．
 
 mask $L$ に関しては，手法によりいろいろなものが提案されていますが，多くの場合Causal mask と呼ばれる以下のmaskが適用されます．
@@ -2691,20 +2705,17 @@ L =
 1 & 1 & \cdots & 1 \\
 \end{bmatrix}
 $$
+
 この $L$ は，1-SS行列になっています．
 
-これでSSMと全く同じ形の式ができました．
+式 (59) と 式 (60) は全く同じ形をしています．
+これでSSMとLinear Attentionを関係づけることができました．  
 図にすると次のような関係性です．
 
-<section style="text-align: center;">
-
-![](images/mamba2/structured-attention.png)
-
-</section>
+<center><img src="images/mamba2/structured-attention.png" width="80%"></center>
 
 ## 10.3. State Space Duality
-ここまでで，SSMとLinear Attentionが全く同じ式で表現できることが分かりました．
-
+ここまでで，SSMとLinear Attentionが全く同じ式で表現できることが分かりました．  
 ただし条件として
 
 - $A$ が単位行列のスカラー倍であること
@@ -2712,21 +2723,16 @@ $$
 
 が要求されます．
 
-これで2つのモデルを同一視できるので，このクラスをState Space Duality（SSD）と名付けます．
+これで2つのモデルを同一視できるので，このクラスをState Space Duality（SSD）と名付けます．  
 2つの対応関係を図にまとめると以下のようになります．
 
-<section style="text-align: center;">
-
-![](images/mamba2/ssd.png)
-
-</section>
+<center><img src="images/mamba2/ssd.png" width="80%"></center>
 
 ## 10.4. 効率的な計算アルゴリズム
-SSDは，Linear Attentionを含む行列積の形で表されるため，既にGPUフレンドリーな計算を行うことができます．
-
-しかしここでは，より効率的な計算について考えます．
-計算量や空間計算量について分かりやすく表現するために，$\text{BMM}(B,M,N,K)$ という表記を導入します．
-これは，$M\times K$ と $K\times N$ の行列積をバッチサイズ $B$ 個分行うという意味です．
+SSDは，Linear Attentionを含む行列積の形で表されるため，既にGPUフレンドリーな計算を行うことができます．  
+しかしここでは，より効率的な計算について考えます．  
+計算量や空間計算量について分かりやすく表現するために，$\text{BMM}(B,M,N,K)$ という表記を導入します．  
+これは，サイズが $M\times K$ と $K\times N$ の行列の積をバッチサイズ $B$ 個分行うという意味です．
 このとき，
 
 - 計算量 : $O(BMNK)$
@@ -2736,7 +2742,7 @@ SSDは，Linear Attentionを含む行列積の形で表されるため，既にG
 
 効率性の鍵はブロック分解です．
 行列 $M$ を $Q\times Q$ のブロックに分解します．
-$$
+$$\tag{61}
 M = 
 \begin{bmatrix}
 M^{(0,0)} &  &  &  \\
@@ -2747,15 +2753,11 @@ M^{(0,T/Q-1)} & M^{(1,T/Q-1)} & \cdots & M^{(T/Q-1,T/Q-1)}
 $$
 
 以下は $T=9,Q=3$ のときの例です．
-ブロック分解をすると，非対角成分を低ランクの積で表現することができます．
+ブロック分解をすると，非対角成分を低ランクの積で表現することができます．（補題3.3）
 
 論文では，$A_{j:i} = A_j ... A_{i+1}$ と表記しています．
 
-<section style="text-align: center;">
-
-![](images/mamba2/block_m.png)
-
-</section>
+<center><img src="images/mamba2/block_m.png" width="80%"></center>
 
 ### 10.4.1. 対角ブロック
 対角ブロックは $\frac{T}{Q}$ 個の $Q\times Q$ の小さな1-SS行列になっています．
@@ -2789,6 +2791,7 @@ Mambaでは，入力は1次元を考えていましたが，Mamba 2では，$P$ 
 - $M_ix_i$ は，$\text{BMM}(T/Q,Q,P,Q)$
 
 となります．
+サイズ $Q$ の小さなブロックにしたことで計算が効率化されます．
 
 ### 10.4.2. 非対角ブロック
 次のブロックを例に考えてみます．
@@ -2809,7 +2812,7 @@ $$
 
 まずは各部分の行列のサイズを考えます．
 
-左部分：
+#### 10.4.2.1. 左部分
 $$
 \begin{bmatrix}
 C_3^\top A_{3:2} \\
@@ -2819,18 +2822,20 @@ C_5^\top A_{5:2}
 $$
 $C^\top A$ は，$\mathbb{R}^{1\times N}\times\mathbb{R}^{N\times N}$ の計算なので，この部分のサイズは $\mathbb{R}^{Q\times N}$ になります．
 
-中央部分：$\mathbb{R}^{N\times N}$ の行列積なのでサイズは $\mathbb{R}^{N\times N}$ です．
+#### 10.4.2.2. 中央部分
+$\mathbb{R}^{N\times N}$ の行列積なのでサイズは $\mathbb{R}^{N\times N}$ です．
 
-右部分：左部分と同様で $\mathbb{R}^{Q\times N}$ になります．
+#### 10.4.2.3. 右部分
+左部分と同様で $\mathbb{R}^{Q\times N}$ になります．
 
+#### 10.4.2.4. 非対角ブロックの計算量
 よって，入力との積を考えると，
 - 右部分×入力 : $\text{BMM}(T/Q,N,P,Q)$
 - 中央部分 : 中央部分は対角行列の積（MambaのScan）あるいは，1-SS用の効率的なアルゴリズムを用います．
 - 左部分 : $\text{BMM}(T/Q,Q,P,N)$
 
----
-
-ここで，簡単のため $N=P=Q$ （隠れ次元数＝特徴量数＝ブロックサイズ）とすると，全ての計算が $\text{BMM}(T/N,N,N,N)$ となります．
+### 10.4.3. 全体の計算量
+簡単のため $N=P=Q$ （隠れ次元数＝特徴量数＝ブロックサイズ）とすると，全ての計算が $\text{BMM}(T/N,N,N,N)$ となります．  
 学習では，全てのブロックを並列で計算できるので，Mamba 2の計算量と空間計算量は，
 - 計算量 : $O(TN^2)$
 - 空間計算量 : $O(TN)$
@@ -2838,18 +2843,14 @@ $C^\top A$ は，$\mathbb{R}^{1\times N}\times\mathbb{R}^{N\times N}$ の計算�
 となり，系列長 $T$ に対して線形に増加します．
 他の手法と比較すると次の通りです．
 
-<section style="text-align: center;">
-
-![](images/mamba2/flops.png)
-
-</section>
+<center><img src="images/mamba2/flops.png" width="40%"></center>
 
 >[!NOTE]
 >1-SSのための効率的なアルゴリズムとして論文内では5つほど紹介されています．
 >どの手法も $O(T),O(T\log T)$ 程のようです．
 
 ## 10.5. アルゴリズムの解釈
-対角ブロックや非対角ブロックの左・中央・右部分がどのような意味を持っているのかについて考えます．
+対角ブロックや非対角ブロックの左・中央・右部分がどのような意味を持っているのかについて考えます．  
 対角ブロックについては，入力と出力が直接結びついているので，非対角ブロックについて考えます．
 
 そもそものSSMの式を思い出すと，$A$ は隠れ状態の更新，$B$ は入力を隠れ状態に，$C$ は隠れ状態を出力にする役割がありました．
@@ -2869,25 +2870,21 @@ B_2^\top A_{2:2}
 \end{bmatrix}^\top
 $$
 
-右部分では，入力を $B$ によって隠れ状態にした後，$A$ によって更新を行っています．
-ここで，$t=0$ の入力は $A_1,A_2$ によって2回更新されます．
-また，$t=1$ の入力は $A_2$ によって1回更新され，$t=2$ の入力は更新されません．
+右部分では，入力を $B$ によって隠れ状態にした後，$A$ によって更新を行っています．  
+ここで，$t=0$ の入力は $A_1,A_2$ によって2回更新されます．  
+また，$t=1$ の入力は $A_2$ によって1回更新され，$t=2$ の入力は更新されません．  
 つまり，各ブロック内の最終的な隠れ状態を求めていることになります．
 
-次に中央部分では，隠れ状態の更新を行っています．
-ここでは，各ブロックの最終的な隠れ状態を出力部分のブロック（対角ブロック）まで更新する役割があります．
+次に中央部分では，隠れ状態の更新を行っています．  
+ここでは，各ブロックの最終的な隠れ状態を出力部分のブロック（対角ブロック）まで更新する役割があります．  
 中央部分によって，各ブロックの隠れ状態が，出力部分へと集約されていきます．
 
-最後に左部分では，隠れ状態を更新した後，$C$ によって出力になります．
+最後に左部分では，隠れ状態を更新した後，$C$ によって出力になります．  
 ここでは，前までのブロックの最終的な隠れ状態から，各出力 $y_t$ へと隠れ状態を反映させる役割があります．
 
 以上を図にまとめると次のようになります．
 
-<section style="text-align: center;">
-
-![](images/mamba2/algo_interpret.png)
-
-</section>
+<center><img src="images/mamba2/algo_interpret.png" width="90%"></center>
 
 ## 10.6. モデルアーキテクチャ
 Mamba 2のモデルアーキテクチャを以下に示します．
@@ -2896,89 +2893,52 @@ Mambaからの大きな変更はありませんが，MambaではSSMブロック�
 
 細かい構造（左図・右図など）はまだ改善の余地があるようです．
 
-<section style="text-align: center;">
+<center><img src="images/mamba2/arch.png" width="80%"></center>
 
-![](images/mamba2/arch.png)
+---
 
-</section>
-
-TransformerとMambaの関連性が示されたことでマルチヘッドアテンションを導入することができます．
-入力の次元を $P$ としていましたが，これをヘッドの次元として，$P=64,128$ くらいで固定します．
+TransformerとMambaの関連性が示されたことでマルチヘッドアテンションを導入することができます．  
+入力の次元を $P$ としていましたが，これをヘッドの次元として，$P=64,128$ くらいで固定します．  
 もし隠れ次元として256次元ある場合は，$P=64$ のヘッドを4つ用意することになります．
 
 ## 10.7. 実験結果
 まずは言語性能に関する実験結果です．
 Mambaよりもさらに性能が上がっています．
 
-<section style="text-align: center;">
+<center><img src="images/mamba2/res1.png" width="90%"></center>
 
-![](images/mamba2/res1.png)
-
-</section>
+---
 
 次に速度性能です．
 Scanに比べてさらに速度が上がっています．
 
-<section style="text-align: center;">
+<center><img src="images/mamba2/res2.png" width="80%"></center>
 
-![](images/mamba2/res2.png)
-
-</section>
+---
 
 全てをMambaブロックで置き換えるのではなく，一部をTransformerブロックに置き換えた方が精度が上がります．
 
-<section style="text-align: center;">
+<center><img src="images/mamba2/res3.png" width="80%"></center>
 
-![](images/mamba2/res3.png)
-
-</section>
+---
 
 その他，スケーリング則やアブレーションについても実験が行われています．
 
 >[!NOTE]
 >Transformerの知識をMambaに転移するという論文が発表されました．https://arxiv.org/abs/2408.15237
 >
->両者のアーキテクチャが結構似ているので，知識転移が可能なようです．
-><section style="text-align: center;">
->
->![](images/mamba/arch_tm.png)
->
-></section>
+><center><img src="images/mamba2/transfer.png" width="50%"></center>
 
 >[!NOTE]
->Mamba 2の実験結果から分かるように，MambaとTransformerを組み合わせるという方向性が今の流れのようです．
+>Mamba 2の実験結果から分かるように，MambaとTransformerを組み合わせるという方向性が今の流れのようです．  
 >実際にJambaやZambaといったハイブリッド手法が提案されています．
 
 # 11. 全体のまとめ
 - HiPPOは，長期依存を捉えるための効率的な記憶方法を提案しました．
-- LSSLは，HiPPOによって効率的な記憶ができるようになった線形RNNを1つのモジュール（層）として扱えるようにしました．
+- LSSLは，HiPPOによって効率的な記憶ができるようになった線形RNNを1つのモジュール（層）として扱えるようにしました．  
   さらに，このモジュールは学習は並列計算可能な畳み込みとして，推論は効率的な再帰計算としてふるまうことができます．
-- S4は，LSSLの速度を大幅に改善しました．さらに，効果的なHiPPO1行列の学習方法も提案しました．
+- S4は，LSSLの速度を大幅に改善しました．さらに，効果的なHiPPO行列の学習方法も提案しました．
 - H3は，S4が自然言語処理に対処できるようにAttention-Likeな構造を提案しました．
-- Mambaは，S4が自然言語処理に対応できるようにパラメータを入力依存に拡張しました．
+- Mambaは，S4が自然言語処理に対応できるようにパラメータを入力依存に拡張しました．  
   効率的な計算を行うことで，計算速度の低下を補いました．
 - Mamba 2は，MambaとTransformerの関連性を示して，Mambaの解釈性や計算効率向上を行いました．
-
-# 12. Mamba vs Transformer
-あくまで個人の見解ですが，mambaがTransformerの完全な代替になることはないと思います．
-MambaはRNNであり（？），どんなに長い系列も固定長のベクトルに押し込んでしまいます．
-しかしTransformerは，Attention機構によってどんな系列についても1トークンずつベクトルとして扱います．
-そのため，当然Transformerの方が精度が出ると思います．
-
-しかしMambaにも良いところがあり，それは長期的な依存関係を捉えられるという点です．
-系列が長くなってくると，Transformerで処理するのはかなり厳しくなりますが，Mambaであれば苦ではありません．
-そのため，ものすごく長い系列についてはmambaが優位に立つ可能性もなくはないと思います．
-
-個人的には，両者のハイブリッドが良いのだろうと思います．
-
-例えば，100万トークンの入力があったとします．
-Transformerではさすがに厳しいです．
-そこで，1万トークンごとに分け，それらをmambaに入力します．
-そうすれば，1万トークンを固定長のベクトルに押し込んでくれるわけですから，100個のベクトルができることになります．
-この100個のベクトルをTransformer（Attention）に入力してあげれば，精度を保ったまま長い入力に対応できるのではないでしょうか？
-いわば，トークン単位の埋め込みをした後に，段落単位の埋め込みをするようなものです．
-そして，Transformerに続きの段落について計算してもらいます．
-そしたら，段落単位の逆埋め込み，トークン単位の逆埋め込みを経て，出力文ができあがります．
-完全に想像の話ですが，もしこれができるとなると，一度の計算で1つの段落を出力できることになります．
-そうすればかなりの計算量削減になるのではないでしょうか？
-S4の考察より，入力の保存についてはかなりのものなので，入力の保存をmamba，予測をTransformerが...なんて．
